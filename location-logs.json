@@ -1,0 +1,227 @@
+[
+  {
+    "id": 1775242489084,
+    "tripId": 1,
+    "latitude": 56.1,
+    "longitude": -3.2,
+    "placeName": "Test Place",
+    "recordedAt": "2026-04-03T16:00:00.000Z",
+    "receivedAt": "2026-04-03T18:54:49.084Z"
+  },
+  {
+    "id": 1775243137076,
+    "tripId": 8,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:05:36.804Z",
+    "receivedAt": "2026-04-03T19:05:37.076Z"
+  },
+  {
+    "id": 1775243137094,
+    "tripId": 1,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:06:26.450Z",
+    "receivedAt": "2026-04-03T19:05:37.094Z"
+  },
+  {
+    "id": 1775243137107,
+    "tripId": 2,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:30:44.208Z",
+    "receivedAt": "2026-04-03T19:05:37.107Z"
+  },
+  {
+    "id": 1775243137138,
+    "tripId": 3,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:30:51.880Z",
+    "receivedAt": "2026-04-03T19:05:37.138Z"
+  },
+  {
+    "id": 1775243137161,
+    "tripId": 4,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:30:52.507Z",
+    "receivedAt": "2026-04-03T19:05:37.161Z"
+  },
+  {
+    "id": 1775243137186,
+    "tripId": 5,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:30:54.152Z",
+    "receivedAt": "2026-04-03T19:05:37.186Z"
+  },
+  {
+    "id": 1775243137214,
+    "tripId": 6,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:51:12.805Z",
+    "receivedAt": "2026-04-03T19:05:37.214Z"
+  },
+  {
+    "id": 1775243137236,
+    "tripId": 7,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:52:48.655Z",
+    "receivedAt": "2026-04-03T19:05:37.236Z"
+  },
+  {
+    "id": 1775243137251,
+    "tripId": 8,
+    "latitude": -1.3229691945841764,
+    "longitude": 36.76581781357527,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T18:52:58.037Z",
+    "receivedAt": "2026-04-03T19:05:37.251Z"
+  },
+  {
+    "id": 1775243164362,
+    "tripId": 8,
+    "latitude": 55.8067244,
+    "longitude": -4.2197447,
+    "placeName": "Glasgow City",
+    "recordedAt": "2026-04-03T19:06:04.112Z",
+    "receivedAt": "2026-04-03T19:06:04.362Z"
+  },
+  {
+    "id": 1775243174256,
+    "tripId": 8,
+    "latitude": -1.3083727742443296,
+    "longitude": 36.78636588156223,
+    "placeName": "Nairobi City",
+    "recordedAt": "2026-04-03T19:06:13.999Z",
+    "receivedAt": "2026-04-03T19:06:14.256Z"
+  },
+  {
+    "id": 1775243183371,
+    "tripId": 8,
+    "latitude": -1.3059051137132633,
+    "longitude": 36.823972798883915,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:06:23.123Z",
+    "receivedAt": "2026-04-03T19:06:23.371Z"
+  },
+  {
+    "id": 1775243230136,
+    "tripId": 8,
+    "latitude": -1.3542580088024492,
+    "longitude": 36.90264064818621,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:07:09.883Z",
+    "receivedAt": "2026-04-03T19:07:10.136Z"
+  },
+  {
+    "id": 1775243325203,
+    "tripId": 8,
+    "latitude": -1.3542580088024492,
+    "longitude": 36.90264064818621,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:08:44.936Z",
+    "receivedAt": "2026-04-03T19:08:45.203Z"
+  },
+  {
+    "id": 1775243563380,
+    "tripId": 8,
+    "latitude": -1.3542580088024492,
+    "longitude": 36.90264064818621,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:12:43.134Z",
+    "receivedAt": "2026-04-03T19:12:43.380Z"
+  },
+  {
+    "id": 1775243653064,
+    "tripId": 8,
+    "latitude": -1.3542580088024492,
+    "longitude": 36.90264064818621,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:14:12.818Z",
+    "receivedAt": "2026-04-03T19:14:13.064Z"
+  },
+  {
+    "id": 1775243828370,
+    "tripId": 8,
+    "latitude": -1.3542580088024492,
+    "longitude": 36.90264064818621,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:17:08.107Z",
+    "receivedAt": "2026-04-03T19:17:08.370Z"
+  },
+  {
+    "id": 1775244364250,
+    "tripId": 8,
+    "latitude": 55.8067302,
+    "longitude": -4.2197497,
+    "placeName": "Glasgow City",
+    "recordedAt": "2026-04-03T19:26:03.957Z",
+    "receivedAt": "2026-04-03T19:26:04.250Z"
+  },
+  {
+    "id": 1775244368359,
+    "tripId": 8,
+    "latitude": -1.3542580088024492,
+    "longitude": 36.90264064818621,
+    "placeName": "Nairobi",
+    "recordedAt": "2026-04-03T19:17:42.710Z",
+    "receivedAt": "2026-04-03T19:26:08.359Z"
+  },
+  {
+    "id": 1775244368500,
+    "tripId": 8,
+    "latitude": -1.482811719152489,
+    "longitude": 37.04767741262913,
+    "placeName": "Eastern",
+    "recordedAt": "2026-04-03T19:26:08.276Z",
+    "receivedAt": "2026-04-03T19:26:08.500Z"
+  },
+  {
+    "id": 1775246819603,
+    "tripId": 8,
+    "latitude": -1.482811719152489,
+    "longitude": 37.04767741262913,
+    "placeName": "Eastern",
+    "recordedAt": "2026-04-03T20:06:59.375Z",
+    "receivedAt": "2026-04-03T20:06:59.603Z"
+  },
+  {
+    "id": 1775246874697,
+    "tripId": 8,
+    "latitude": -1.482811719152489,
+    "longitude": 37.04767741262913,
+    "placeName": "Eastern",
+    "recordedAt": "2026-04-03T20:07:54.492Z",
+    "receivedAt": "2026-04-03T20:07:54.697Z"
+  },
+  {
+    "id": 1775246924504,
+    "tripId": 8,
+    "latitude": -1.482811719152489,
+    "longitude": 37.04767741262913,
+    "placeName": "Eastern",
+    "recordedAt": "2026-04-03T20:08:44.301Z",
+    "receivedAt": "2026-04-03T20:08:44.504Z"
+  },
+  {
+    "id": 1775246948779,
+    "tripId": 9,
+    "latitude": -1.482811719152489,
+    "longitude": 37.04767741262913,
+    "placeName": "Eastern",
+    "recordedAt": "2026-04-03T20:09:08.561Z",
+    "receivedAt": "2026-04-03T20:09:08.779Z"
+  }
+]
