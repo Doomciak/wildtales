@@ -223,5 +223,617 @@
     "placeName": "Eastern",
     "recordedAt": "2026-04-03T20:09:08.561Z",
     "receivedAt": "2026-04-03T20:09:08.779Z"
+  },
+  {
+    "id": 1775300172105,
+    "tripId": 12,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:45:07.523Z",
+    "receivedAt": "2026-04-04T10:56:12.105Z"
+  },
+  {
+    "id": 1775300221772,
+    "tripId": 12,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:04.480Z",
+    "receivedAt": "2026-04-04T10:57:01.772Z"
+  },
+  {
+    "id": 1775300221791,
+    "tripId": 10,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "Glasgow City",
+    "recordedAt": "2026-04-04T10:41:37.750Z",
+    "receivedAt": "2026-04-04T10:57:01.791Z"
+  },
+  {
+    "id": 1775300221804,
+    "tripId": 10,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "Glasgow City",
+    "recordedAt": "2026-04-04T10:41:48.023Z",
+    "receivedAt": "2026-04-04T10:57:01.804Z"
+  },
+  {
+    "id": 1775300221821,
+    "tripId": 11,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "Glasgow City",
+    "recordedAt": "2026-04-04T10:42:09.595Z",
+    "receivedAt": "2026-04-04T10:57:01.821Z"
+  },
+  {
+    "id": 1775300221836,
+    "tripId": 11,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "Glasgow City",
+    "recordedAt": "2026-04-04T10:42:12.404Z",
+    "receivedAt": "2026-04-04T10:57:01.836Z"
+  },
+  {
+    "id": 1775300233656,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:16.233Z",
+    "receivedAt": "2026-04-04T10:57:13.656Z"
+  },
+  {
+    "id": 1775300251781,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:34.488Z",
+    "receivedAt": "2026-04-04T10:57:31.781Z"
+  },
+  {
+    "id": 1775300251813,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:34.542Z",
+    "receivedAt": "2026-04-04T10:57:31.813Z"
+  },
+  {
+    "id": 1775300253077,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:35.791Z",
+    "receivedAt": "2026-04-04T10:57:33.077Z"
+  },
+  {
+    "id": 1775300267761,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:50.473Z",
+    "receivedAt": "2026-04-04T10:57:47.761Z"
+  },
+  {
+    "id": 1775300269270,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:57:52.000Z",
+    "receivedAt": "2026-04-04T10:57:49.270Z"
+  },
+  {
+    "id": 1775300283642,
+    "tripId": 13,
+    "latitude": 55.8067369,
+    "longitude": -4.2197413,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T10:58:06.356Z",
+    "receivedAt": "2026-04-04T10:58:03.642Z"
+  },
+  {
+    "id": 1775301279599,
+    "tripId": 13,
+    "latitude": 55.8067352,
+    "longitude": -4.2197379,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T11:14:42.292Z",
+    "receivedAt": "2026-04-04T11:14:39.599Z"
+  },
+  {
+    "id": 1775301293762,
+    "tripId": 13,
+    "latitude": 55.8067352,
+    "longitude": -4.2197379,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T11:14:56.503Z",
+    "receivedAt": "2026-04-04T11:14:53.762Z"
+  },
+  {
+    "id": 1775301533002,
+    "tripId": 13,
+    "latitude": 55.8067352,
+    "longitude": -4.2197379,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T11:18:55.743Z",
+    "receivedAt": "2026-04-04T11:18:53.002Z"
+  },
+  {
+    "id": 1775301995787,
+    "tripId": 13,
+    "latitude": 55.8067408,
+    "longitude": -4.219747,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T11:26:38.541Z",
+    "receivedAt": "2026-04-04T11:26:35.787Z"
+  },
+  {
+    "id": 1775302052192,
+    "tripId": 13,
+    "latitude": 55.8067408,
+    "longitude": -4.219747,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T11:27:34.935Z",
+    "receivedAt": "2026-04-04T11:27:32.192Z"
+  },
+  {
+    "id": 1775304030141,
+    "tripId": 14,
+    "latitude": 55.8067387,
+    "longitude": -4.2197403,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T12:00:32.905Z",
+    "receivedAt": "2026-04-04T12:00:30.141Z"
+  },
+  {
+    "id": 1775304030207,
+    "tripId": 14,
+    "latitude": 55.8067387,
+    "longitude": -4.2197403,
+    "placeName": "United Kingdom",
+    "recordedAt": "2026-04-04T12:00:33.007Z",
+    "receivedAt": "2026-04-04T12:00:30.207Z"
+  },
+  {
+    "id": 1775304103477,
+    "tripId": 15,
+    "latitude": 52.32020789355659,
+    "longitude": 21.427997164428234,
+    "placeName": "Wola Cygowska, Poland",
+    "recordedAt": "2026-04-04T12:01:46.259Z",
+    "receivedAt": "2026-04-04T12:01:43.477Z"
+  },
+  {
+    "id": 1775304103546,
+    "tripId": 15,
+    "latitude": 52.32020789355659,
+    "longitude": 21.427997164428234,
+    "placeName": "Wola Cygowska, Poland",
+    "recordedAt": "2026-04-04T12:01:46.348Z",
+    "receivedAt": "2026-04-04T12:01:43.546Z"
+  },
+  {
+    "id": 1775304123636,
+    "tripId": 15,
+    "latitude": 52.345180595274115,
+    "longitude": 21.520412676036358,
+    "placeName": "Poland",
+    "recordedAt": "2026-04-04T12:02:06.435Z",
+    "receivedAt": "2026-04-04T12:02:03.636Z"
+  },
+  {
+    "id": 1775304135744,
+    "tripId": 15,
+    "latitude": 52.38281745322183,
+    "longitude": 21.57173004001379,
+    "placeName": "Kąty-Wielgi, Poland",
+    "recordedAt": "2026-04-04T12:02:18.537Z",
+    "receivedAt": "2026-04-04T12:02:15.744Z"
+  },
+  {
+    "id": 1775304137652,
+    "tripId": 15,
+    "latitude": 52.35264139600886,
+    "longitude": 21.615444011986256,
+    "placeName": "Kąty-Borucza, Poland",
+    "recordedAt": "2026-04-04T12:02:20.451Z",
+    "receivedAt": "2026-04-04T12:02:17.652Z"
+  },
+  {
+    "id": 1775304146901,
+    "tripId": 15,
+    "latitude": 52.20386204430308,
+    "longitude": 21.837820261716843,
+    "placeName": "Kałuszyn, Poland",
+    "recordedAt": "2026-04-04T12:02:29.697Z",
+    "receivedAt": "2026-04-04T12:02:26.901Z"
+  },
+  {
+    "id": 1775313664685,
+    "tripId": 16,
+    "latitude": 52.020567188759586,
+    "longitude": 22.966006323695183,
+    "placeName": "Sycyna, Poland",
+    "recordedAt": "2026-04-04T13:27:50.760Z",
+    "receivedAt": "2026-04-04T14:41:04.685Z"
+  },
+  {
+    "id": 1775313664724,
+    "tripId": 16,
+    "latitude": 52.020567188759586,
+    "longitude": 22.966006323695183,
+    "placeName": "Sycyna, Poland",
+    "recordedAt": "2026-04-04T13:29:41.426Z",
+    "receivedAt": "2026-04-04T14:41:04.724Z"
+  },
+  {
+    "id": 1775313664741,
+    "tripId": 16,
+    "latitude": 52.020567188759586,
+    "longitude": 22.966006323695183,
+    "placeName": "Sycyna, Poland",
+    "recordedAt": "2026-04-04T13:30:43.857Z",
+    "receivedAt": "2026-04-04T14:41:04.741Z"
+  },
+  {
+    "id": 1775313664757,
+    "tripId": 17,
+    "latitude": 52.020567188759586,
+    "longitude": 22.966006323695183,
+    "placeName": "Sycyna, Poland",
+    "recordedAt": "2026-04-04T13:36:22.268Z",
+    "receivedAt": "2026-04-04T14:41:04.757Z"
+  },
+  {
+    "id": 1775313664774,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:37:58.420Z",
+    "receivedAt": "2026-04-04T14:41:04.774Z"
+  },
+  {
+    "id": 1775313664799,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:38:17.760Z",
+    "receivedAt": "2026-04-04T14:41:04.799Z"
+  },
+  {
+    "id": 1775313664817,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:40:53.957Z",
+    "receivedAt": "2026-04-04T14:41:04.817Z"
+  },
+  {
+    "id": 1775313664832,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:43:46.191Z",
+    "receivedAt": "2026-04-04T14:41:04.832Z"
+  },
+  {
+    "id": 1775313664849,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:45:17.313Z",
+    "receivedAt": "2026-04-04T14:41:04.849Z"
+  },
+  {
+    "id": 1775313664866,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:45:26.602Z",
+    "receivedAt": "2026-04-04T14:41:04.866Z"
+  },
+  {
+    "id": 1775313664883,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:45:44.729Z",
+    "receivedAt": "2026-04-04T14:41:04.883Z"
+  },
+  {
+    "id": 1775313664901,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:46:44.247Z",
+    "receivedAt": "2026-04-04T14:41:04.901Z"
+  },
+  {
+    "id": 1775313664916,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:46:54.809Z",
+    "receivedAt": "2026-04-04T14:41:04.916Z"
+  },
+  {
+    "id": 1775313664933,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:47:35.055Z",
+    "receivedAt": "2026-04-04T14:41:04.933Z"
+  },
+  {
+    "id": 1775313664949,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:48:34.705Z",
+    "receivedAt": "2026-04-04T14:41:04.949Z"
+  },
+  {
+    "id": 1775313664967,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:52:02.476Z",
+    "receivedAt": "2026-04-04T14:41:04.968Z"
+  },
+  {
+    "id": 1775313664981,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:53:12.501Z",
+    "receivedAt": "2026-04-04T14:41:04.981Z"
+  },
+  {
+    "id": 1775313664999,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:53:53.229Z",
+    "receivedAt": "2026-04-04T14:41:04.999Z"
+  },
+  {
+    "id": 1775313665015,
+    "tripId": 17,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T13:54:00.358Z",
+    "receivedAt": "2026-04-04T14:41:05.015Z"
+  },
+  {
+    "id": 1775313665031,
+    "tripId": 18,
+    "latitude": 51.9967407945535,
+    "longitude": 23.32876905798912,
+    "placeName": "Chotyłów, Poland",
+    "recordedAt": "2026-04-04T14:33:18.266Z",
+    "receivedAt": "2026-04-04T14:41:05.031Z"
+  },
+  {
+    "id": 1775313665048,
+    "tripId": 18,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T14:33:38.961Z",
+    "receivedAt": "2026-04-04T14:41:05.048Z"
+  },
+  {
+    "id": 1775319387860,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T16:16:31.579Z",
+    "receivedAt": "2026-04-04T16:16:27.860Z"
+  },
+  {
+    "id": 1775319387942,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T16:16:31.693Z",
+    "receivedAt": "2026-04-04T16:16:27.942Z"
+  },
+  {
+    "id": 1775319388004,
+    "tripId": 16,
+    "latitude": 52.20386204430308,
+    "longitude": 21.837820261716843,
+    "placeName": "Kałuszyn, Poland",
+    "recordedAt": "2026-04-04T13:27:10.818Z",
+    "receivedAt": "2026-04-04T16:16:28.004Z"
+  },
+  {
+    "id": 1775319388031,
+    "tripId": 16,
+    "latitude": 51.91886061513123,
+    "longitude": 22.888083457946777,
+    "placeName": "Poland",
+    "recordedAt": "2026-04-04T13:27:38.468Z",
+    "receivedAt": "2026-04-04T16:16:28.031Z"
+  },
+  {
+    "id": 1775319565796,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T16:19:29.523Z",
+    "receivedAt": "2026-04-04T16:19:25.796Z"
+  },
+  {
+    "id": 1775319623983,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T16:20:27.723Z",
+    "receivedAt": "2026-04-04T16:20:23.983Z"
+  },
+  {
+    "id": 1775320035045,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T16:27:18.803Z",
+    "receivedAt": "2026-04-04T16:27:15.045Z"
+  },
+  {
+    "id": 1775329526908,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T19:05:30.795Z",
+    "receivedAt": "2026-04-04T19:05:26.908Z"
+  },
+  {
+    "id": 1775329544074,
+    "tripId": 19,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T19:05:47.991Z",
+    "receivedAt": "2026-04-04T19:05:44.074Z"
+  },
+  {
+    "id": 1775329909311,
+    "tripId": 20,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T19:11:53.238Z",
+    "receivedAt": "2026-04-04T19:11:49.311Z"
+  },
+  {
+    "id": 1775329909392,
+    "tripId": 20,
+    "latitude": 51.99805863464051,
+    "longitude": 24.285901598632336,
+    "placeName": "Belarus",
+    "recordedAt": "2026-04-04T19:11:53.337Z",
+    "receivedAt": "2026-04-04T19:11:49.392Z"
+  },
+  {
+    "id": 1775329932757,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:12:16.690Z",
+    "receivedAt": "2026-04-04T19:12:12.757Z"
+  },
+  {
+    "id": 1775330311599,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:13:44.902Z",
+    "receivedAt": "2026-04-04T19:18:31.599Z"
+  },
+  {
+    "id": 1775330311604,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:13:44.902Z",
+    "receivedAt": "2026-04-04T19:18:31.604Z"
+  },
+  {
+    "id": 1775330311606,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:15:03.492Z",
+    "receivedAt": "2026-04-04T19:18:31.606Z"
+  },
+  {
+    "id": 1775330311629,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:15:03.492Z",
+    "receivedAt": "2026-04-04T19:18:31.629Z"
+  },
+  {
+    "id": 1775330311631,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:15:03.492Z",
+    "receivedAt": "2026-04-04T19:18:31.631Z"
+  },
+  {
+    "id": 1775330311649,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:17:34.583Z",
+    "receivedAt": "2026-04-04T19:18:31.649Z"
+  },
+  {
+    "id": 1775330311651,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:17:34.583Z",
+    "receivedAt": "2026-04-04T19:18:31.651Z"
+  },
+  {
+    "id": 1775330311667,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:17:45.320Z",
+    "receivedAt": "2026-04-04T19:18:31.667Z"
+  },
+  {
+    "id": 1775330311670,
+    "tripId": 20,
+    "latitude": 51.764623956095825,
+    "longitude": 25.590043924748898,
+    "placeName": "Ukraine",
+    "recordedAt": "2026-04-04T19:17:45.320Z",
+    "receivedAt": "2026-04-04T19:18:31.670Z"
   }
 ]

@@ -11,15 +11,21 @@
   "dependencies": {
     "expo": "~54.0.33",
     "expo-contacts": "~15.0.11",
+    "expo-file-system": "~19.0.21",
     "expo-image-picker": "~17.0.10",
     "expo-location": "~19.0.8",
+    "expo-network": "~8.0.8",
     "expo-sms": "~14.0.8",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "express": "^5.2.1",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-maps": "1.20.1"
+    "react-native-maps": "1.20.1",
+    "react-native-svg": "15.12.1"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "react-native-svg-transformer": "^1.5.3"
+  }
 }

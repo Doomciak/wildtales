@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import { useRef } from "react";
 import {
   Animated,
@@ -8,6 +7,10 @@ import {
   Text,
   View,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
+
+import { colors, shadows } from "../../constants/theme";
 
 export default function WelcomeScreen({ onContinue }) {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -57,7 +60,7 @@ export default function WelcomeScreen({ onContinue }) {
 
   return (
     <ImageBackground
-      source={require("../assets/images/welcome-hero.jpg")}
+      source={require("../../assets/images/welcome-hero.jpg")}
       style={styles.welcomeScreen}
       imageStyle={styles.welcomeImage}
     >
@@ -84,8 +87,17 @@ export default function WelcomeScreen({ onContinue }) {
               {...panResponder.panHandlers}
             >
               <View style={styles.sliderArrows}>
-                <Text style={styles.sliderArrowSmall}>⌃</Text>
-                <Text style={styles.sliderArrowLarge}>⌃</Text>
+                <Ionicons
+                  name="chevron-up"
+                  size={22}
+                  color="rgba(255,255,255,0.74)"
+                />
+                <Ionicons
+                  name="chevron-up"
+                  size={28}
+                  color={colors.white}
+                  style={styles.sliderArrowIconLarge}
+                />
               </View>
 
               <View style={styles.sliderButton}>
@@ -104,14 +116,14 @@ export default function WelcomeScreen({ onContinue }) {
 const styles = StyleSheet.create({
   welcomeScreen: {
     flex: 1,
-    backgroundColor: "#10251B",
+    backgroundColor: colors.background,
   },
   welcomeImage: {
     resizeMode: "cover",
   },
   welcomeOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(10, 22, 16, 0.34)",
+    backgroundColor: colors.overlayWelcome,
   },
   welcomeContent: {
     flex: 1,
@@ -121,7 +133,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   welcomeTitle: {
-    color: "#FFFFFF",
+    color: colors.white,
     fontSize: 42,
     fontWeight: "800",
     lineHeight: 48,
@@ -155,35 +167,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  sliderArrowSmall: {
-    color: "rgba(255,255,255,0.78)",
-    fontSize: 24,
-    lineHeight: 24,
-    marginBottom: -6,
-  },
-  sliderArrowLarge: {
-    color: "#FFFFFF",
-    fontSize: 30,
-    lineHeight: 30,
+  sliderArrowIconLarge: {
+    marginTop: -8,
   },
   sliderButton: {
     width: 92,
     height: 92,
     borderRadius: 46,
-    backgroundColor: "#F4F7F3",
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    ...shadows.floating,
   },
   sliderButtonText: {
     color: "#173226",
     fontSize: 28,
     fontWeight: "800",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   sliderHint: {
     marginTop: 16,

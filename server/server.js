@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const dataFilePath = path.join(__dirname, "location-logs.json");
 
@@ -78,5 +78,5 @@ app.post("/api/location-logs", (req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`WildTales server running on http://0.0.0.0:${PORT}`);
+  console.log(`WildTales server running on port ${PORT}`);
 });
