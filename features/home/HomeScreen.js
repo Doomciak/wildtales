@@ -14,8 +14,13 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 
-import PlacePreviewModal from "../../components/modals/PlacePreviewModal";
 import JourneyPreviewModal from "../../components/modals/JourneyPreviewModal";
+import PlacePreviewModal from "../../components/modals/PlacePreviewModal";
+import ActionIconButton from "../../components/ui/ActionIconButton";
+import EmptyStateCard from "../../components/ui/EmptyStateCard";
+import InfoPill from "../../components/ui/InfoPill";
+import ScreenHeader from "../../components/ui/ScreenHeader";
+import SectionHeader from "../../components/ui/SectionHeader";
 import { colors } from "../../constants/theme";
 import { radius, screen, spacing } from "../../constants/layout";
 import {
@@ -29,6 +34,7 @@ import {
 export default function HomeScreen({
   featuredPlace,
   recentPlaces,
+  recentRoutes = [],
   totalPlaces,
   totalRoutes,
   activeRouteLink,
@@ -38,8 +44,9 @@ export default function HomeScreen({
   onOpenAdd,
   onEditPlace,
   onEditRoute,
+  onRemovePlace,
   onRemoveRoute,
-  onSaveRouteAsPlace,
+  onAddJourneyPhotos,
 }) {
   const [previewPlace, setPreviewPlace] = useState(null);
   const [previewRoute, setPreviewRoute] = useState(null);
@@ -50,13 +57,11 @@ export default function HomeScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.homeTopArea}>
-          <Text style={styles.homeTitle}>WildTales</Text>
-          <Text style={styles.homeSubtitle}>
-            A simple home for your memories, saved places, routes, and live trip
-            updates.
-          </Text>
-        </View>
+        <ScreenHeader
+          title="WildTales"
+          subtitle="Your travel diary for places worth remembering, routes worth keeping, and small adventures along the way."
+          maxWidth={330}
+        />
 
         {activeRouteLink ? (
           <View style={styles.liveRouteStrip}>
@@ -111,171 +116,267 @@ export default function HomeScreen({
         </View>
 
         {featuredPlace ? (
-          <Pressable
-            style={styles.featuredHomeCard}
-            onPress={() => setPreviewPlace(featuredPlace)}
-          >
-            {featuredPlace.coverImage ? (
-              <ImageBackground
-                source={{ uri: featuredPlace.coverImage }}
-                style={styles.featuredHomeImage}
-                imageStyle={styles.featuredHomeImageStyle}
-              >
-                <View style={styles.featuredHomeOverlay} />
-                <View style={styles.featuredHomeContent}>
+          <View style={styles.featuredHomeCard}>
+            <Pressable onPress={() => setPreviewPlace(featuredPlace)}>
+              {featuredPlace.coverImage ? (
+                <ImageBackground
+                  source={{ uri: featuredPlace.coverImage }}
+                  style={styles.featuredHomeImage}
+                  imageStyle={styles.featuredHomeImageStyle}
+                >
+                  <View style={styles.featuredHomeOverlay} />
+                  <View style={styles.featuredHomeContent}>
+                    <Text style={styles.heroLabel}>Featured memory</Text>
+                    <Text style={styles.heroTitle}>{featuredPlace.title}</Text>
+
+                    {getPlaceLocationText(featuredPlace) ? (
+                      <View style={styles.inlineRow}>
+                        <Ionicons
+                          name="location-outline"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                        <Text style={styles.heroPlaceName}>
+                          {getPlaceLocationText(featuredPlace)}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    <Text style={styles.heroSubtitle} numberOfLines={2}>
+                      {featuredPlace.note}
+                    </Text>
+                  </View>
+                </ImageBackground>
+              ) : (
+                <View style={styles.featuredHomeFallback}>
                   <Text style={styles.heroLabel}>Featured memory</Text>
-                  <Text style={styles.heroTitle}>{featuredPlace.title}</Text>
+                  <Text style={styles.heroTitleFallback}>
+                    {featuredPlace.title}
+                  </Text>
 
                   {getPlaceLocationText(featuredPlace) ? (
-                    <View style={styles.inlineRow}>
-                      <Ionicons
-                        name="location-outline"
-                        size={14}
-                        color={colors.textSecondary}
-                      />
-                      <Text style={styles.heroPlaceName}>
-                        {getPlaceLocationText(featuredPlace)}
-                      </Text>
-                    </View>
+                    <Text style={styles.heroPlaceNameFallback} numberOfLines={1}>
+                      {getPlaceLocationText(featuredPlace)}
+                    </Text>
                   ) : null}
 
-                  <Text style={styles.heroSubtitle} numberOfLines={2}>
+                  <Text style={styles.heroSubtitleFallback} numberOfLines={2}>
                     {featuredPlace.note}
                   </Text>
                 </View>
-              </ImageBackground>
-            ) : (
-              <View style={styles.featuredHomeFallback}>
-                <Text style={styles.heroLabel}>Featured memory</Text>
-                <Text style={styles.heroTitle}>{featuredPlace.title}</Text>
-                <Text style={styles.heroSubtitle} numberOfLines={2}>
-                  {featuredPlace.note}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        ) : (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIconWrap}>
-              <MaterialCommunityIcons
-                name="map-marker-path"
-                size={24}
-                color={colors.textSecondary}
+              )}
+            </Pressable>
+
+            <View style={styles.overlayActionsRow}>
+              <ActionIconButton
+                icon="edit-2"
+                onPress={() => onEditPlace(featuredPlace)}
+                accessibilityLabel="Edit featured place"
+              />
+              <ActionIconButton
+                icon="trash-2"
+                onPress={() => onRemovePlace?.(featuredPlace.id)}
+                accessibilityLabel="Delete featured place"
+                variant="danger"
+                style={styles.overlayActionButton}
               />
             </View>
-            <Text style={styles.emptyTitle}>No places yet</Text>
-            <Text style={styles.emptyText}>
-              Start by saving your first place and it will appear here.
-            </Text>
           </View>
+        ) : (
+          <EmptyStateCard
+            icon="map-marker-path"
+            iconSet="material-community"
+            title="No places yet"
+            text="Start by saving your first place and it will appear here."
+            style={styles.emptyCard}
+          />
         )}
 
         {latestRoute ? (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Latest journey</Text>
-              <Pressable onPress={onOpenRoutes}>
-                <Text style={styles.sectionLink}>View all</Text>
-              </Pressable>
-            </View>
+            <SectionHeader title="Latest journey" onPress={onOpenRoutes} />
 
             <View style={styles.latestJourneyCard}>
-              <View style={styles.latestJourneyTop}>
-                <View style={styles.latestJourneyTextWrap}>
-                  <Text style={styles.latestJourneyTitle} numberOfLines={1}>
-                    {latestRoute.title}
-                  </Text>
+              <Pressable onPress={() => setPreviewRoute(latestRoute)}>
+                {latestRoute.snapshotUri ? (
+                  <Image
+                    source={{ uri: latestRoute.snapshotUri }}
+                    style={styles.latestJourneyHero}
+                  />
+                ) : (
+                  <View style={styles.latestJourneyFallback}>
+                    <Ionicons
+                      name="trail-sign-outline"
+                      size={26}
+                      color={colors.textSecondary}
+                    />
+                    <Text style={styles.latestJourneyFallbackText}>
+                      No route snapshot yet
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.latestJourneyTop}>
+                  <View style={styles.latestJourneyHeaderRow}>
+                    <Text style={styles.latestJourneyTitle} numberOfLines={1}>
+                      {latestRoute.title}
+                    </Text>
+                    <Text style={styles.latestJourneyDate}>
+                      {formatJourneyDate(
+                        latestRoute.endedAt || latestRoute.startedAt
+                      )}
+                    </Text>
+                  </View>
 
                   {getRouteLocationLine(latestRoute) ? (
-                    <Text
-                      style={styles.latestJourneyLocation}
-                      numberOfLines={1}
-                    >
+                    <Text style={styles.latestJourneyLocation} numberOfLines={1}>
                       {getRouteLocationLine(latestRoute)}
                     </Text>
                   ) : null}
-                </View>
 
-                <Text style={styles.latestJourneyDate}>
-                  {formatJourneyDate(
-                    latestRoute.endedAt || latestRoute.startedAt
-                  )}
-                </Text>
-              </View>
+                  <View style={styles.journeyMetaRow}>
+                    <InfoPill
+                      icon="navigate-outline"
+                      label={formatDistanceKm(Number(latestRoute.distanceKm || 0))}
+                      style={styles.metaPillItem}
+                    />
 
-              <View style={styles.journeyMetaRow}>
-                <View style={styles.journeyMetaPill}>
-                  <Ionicons
-                    name="navigate-outline"
-                    size={13}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={styles.journeyMetaPillText}>
-                    {formatDistanceKm(Number(latestRoute.distanceKm || 0))}
-                  </Text>
-                </View>
+                    <InfoPill
+                      icon="clock"
+                      iconSet="feather"
+                      label={formatDuration(
+                        Number(latestRoute.durationMinutes || 0)
+                      )}
+                      style={styles.metaPillItem}
+                    />
 
-                <View style={styles.journeyMetaPill}>
-                  <Feather
-                    name="clock"
-                    size={13}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={styles.journeyMetaPillText}>
-                    {formatDuration(Number(latestRoute.durationMinutes || 0))}
-                  </Text>
+                    {Array.isArray(latestRoute.images) &&
+                    latestRoute.images.length > 0 ? (
+                      <InfoPill
+                        icon="images-outline"
+                        variant="muted"
+                        label={`${latestRoute.images.length} photo${
+                          latestRoute.images.length === 1 ? "" : "s"
+                        }`}
+                        style={styles.metaPillItem}
+                      />
+                    ) : null}
+                  </View>
                 </View>
-              </View>
+              </Pressable>
 
               <View style={styles.latestJourneyActions}>
-                <Pressable
-                  style={styles.placePrimaryAction}
-                  onPress={() => setPreviewRoute(latestRoute)}
-                >
-                  <Feather name="eye" size={14} color={colors.textDark} />
-                  <Text style={styles.placePrimaryActionText}>Preview</Text>
-                </Pressable>
-
-                <Pressable
-                  style={styles.placeSecondaryAction}
+                <ActionIconButton
+                  icon="edit-2"
                   onPress={() => onEditRoute(latestRoute)}
-                >
-                  <Feather
-                    name="edit-2"
-                    size={14}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={styles.placeSecondaryActionText}>Edit</Text>
-                </Pressable>
+                  accessibilityLabel="Edit latest journey"
+                />
 
-                <Pressable
-                  style={styles.placeDeleteAction}
+                <ActionIconButton
+                  icon="images-outline"
+                  iconSet="ionicons"
+                  onPress={() => onAddJourneyPhotos?.(latestRoute)}
+                  accessibilityLabel="Add photos to latest journey"
+                  style={styles.latestActionButton}
+                />
+
+                <ActionIconButton
+                  icon="trash-2"
                   onPress={() => onRemoveRoute(latestRoute.id)}
-                >
-                  <Feather
-                    name="trash-2"
-                    size={14}
-                    color={colors.textSecondary}
-                  />
-                </Pressable>
+                  accessibilityLabel="Delete latest journey"
+                  variant="danger"
+                  style={styles.latestActionButton}
+                />
               </View>
             </View>
           </>
         ) : null}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent memories</Text>
-          <Pressable onPress={onOpenPlaces}>
-            <Text style={styles.sectionLink}>View all</Text>
-          </Pressable>
-        </View>
+        <SectionHeader title="Recent journeys" onPress={onOpenRoutes} />
 
-        {recentPlaces.length === 0
-          ? null
-          : recentPlaces.map((place) => (
+        {recentRoutes.length === 0 ? (
+          <View style={styles.emptyMiniCard}>
+            <Ionicons
+              name="trail-sign-outline"
+              size={18}
+              color={colors.textMuted}
+            />
+            <Text style={styles.emptyMiniText}>No journeys saved yet.</Text>
+          </View>
+        ) : (
+          recentRoutes.map((route) => (
+            <View key={route.id} style={styles.homeMiniCard}>
               <Pressable
-                key={place.id}
-                style={styles.homeMiniCard}
+                style={styles.homeMiniMain}
+                onPress={() => setPreviewRoute(route)}
+              >
+                {route.snapshotUri ? (
+                  <Image
+                    source={{ uri: route.snapshotUri }}
+                    style={styles.homeMiniImage}
+                  />
+                ) : (
+                  <View style={[styles.homeMiniImage, styles.homeMiniFallback]}>
+                    <Ionicons
+                      name="trail-sign-outline"
+                      size={24}
+                      color={colors.textPrimary}
+                    />
+                  </View>
+                )}
+
+                <View style={styles.homeMiniBody}>
+                  <Text style={styles.homeMiniTitle} numberOfLines={1}>
+                    {route.title}
+                  </Text>
+
+                  {getRouteLocationLine(route) ? (
+                    <Text style={styles.homeMiniMeta} numberOfLines={1}>
+                      {getRouteLocationLine(route)}
+                    </Text>
+                  ) : null}
+
+                  <Text style={styles.homeMiniNote} numberOfLines={1}>
+                    {formatDistanceKm(Number(route.distanceKm || 0))} •{" "}
+                    {formatDuration(Number(route.durationMinutes || 0))}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <View style={styles.homeMiniActions}>
+                <ActionIconButton
+                  icon="edit-2"
+                  onPress={() => onEditRoute(route)}
+                  accessibilityLabel={`Edit ${route.title}`}
+                />
+
+                <ActionIconButton
+                  icon="trash-2"
+                  onPress={() => onRemoveRoute(route.id)}
+                  accessibilityLabel={`Delete ${route.title}`}
+                  variant="danger"
+                />
+              </View>
+            </View>
+          ))
+        )}
+
+        <SectionHeader title="Recent memories" onPress={onOpenPlaces} />
+
+        {recentPlaces.length === 0 ? (
+          <View style={styles.emptyMiniCard}>
+            <Ionicons
+              name="images-outline"
+              size={18}
+              color={colors.textMuted}
+            />
+            <Text style={styles.emptyMiniText}>No memories saved yet.</Text>
+          </View>
+        ) : (
+          recentPlaces.map((place) => (
+            <View key={place.id} style={styles.homeMiniCard}>
+              <Pressable
+                style={styles.homeMiniMain}
                 onPress={() => setPreviewPlace(place)}
               >
                 {place.coverImage ? (
@@ -295,37 +396,36 @@ export default function HomeScreen({
                   <Text style={styles.homeMiniTitle} numberOfLines={1}>
                     {place.title}
                   </Text>
+
                   {getPlaceLocationText(place) ? (
                     <Text style={styles.homeMiniMeta} numberOfLines={1}>
                       {getPlaceLocationText(place)}
                     </Text>
                   ) : null}
+
                   <Text style={styles.homeMiniNote} numberOfLines={2}>
                     {place.note}
                   </Text>
                 </View>
-
-                <View style={styles.homeMiniActions}>
-                  <Pressable
-                    style={styles.homeMiniActionButton}
-                    onPress={() => setPreviewPlace(place)}
-                  >
-                    <Feather name="eye" size={14} color={colors.textDark} />
-                  </Pressable>
-
-                  <Pressable
-                    style={styles.homeMiniGhostButton}
-                    onPress={() => onEditPlace(place)}
-                  >
-                    <Feather
-                      name="edit-2"
-                      size={14}
-                      color={colors.textSecondary}
-                    />
-                  </Pressable>
-                </View>
               </Pressable>
-            ))}
+
+              <View style={styles.homeMiniActions}>
+                <ActionIconButton
+                  icon="edit-2"
+                  onPress={() => onEditPlace(place)}
+                  accessibilityLabel={`Edit ${place.title}`}
+                />
+
+                <ActionIconButton
+                  icon="trash-2"
+                  onPress={() => onRemovePlace?.(place.id)}
+                  accessibilityLabel={`Delete ${place.title}`}
+                  variant="danger"
+                />
+              </View>
+            </View>
+          ))
+        )}
 
         <Pressable style={styles.routesShortcutCard} onPress={onOpenRoutes}>
           <View style={styles.inlineRow}>
@@ -334,11 +434,11 @@ export default function HomeScreen({
               size={18}
               color={colors.textSecondary}
             />
-            <Text style={styles.routesShortcutTitle}>Your saved routes</Text>
+            <Text style={styles.routesShortcutTitle}>Your saved journeys</Text>
           </View>
           <Text style={styles.routesShortcutText}>
-            Open routes to preview, edit, delete, or save finished journeys as
-            places.
+            Revisit your routes, update them, and keep photos collected along
+            the way.
           </Text>
         </Pressable>
       </ScrollView>
@@ -347,6 +447,7 @@ export default function HomeScreen({
         place={previewPlace}
         onClose={() => setPreviewPlace(null)}
         onEditPlace={onEditPlace}
+        onDeletePlace={onRemovePlace}
         activeRouteLink={activeRouteLink}
       />
 
@@ -355,7 +456,7 @@ export default function HomeScreen({
         onClose={() => setPreviewRoute(null)}
         onEditJourney={onEditRoute}
         onDeleteJourney={onRemoveRoute}
-        onSaveRouteAsPlace={onSaveRouteAsPlace}
+        onAddJourneyPhotos={onAddJourneyPhotos}
       />
     </>
   );
@@ -366,22 +467,6 @@ const styles = StyleSheet.create({
     paddingTop: screen.topPadding,
     paddingBottom: screen.bottomSpacing,
     paddingHorizontal: spacing.xl,
-  },
-  homeTopArea: {
-    marginBottom: 22,
-  },
-  homeTitle: {
-    color: colors.textPrimary,
-    fontSize: 36,
-    fontWeight: "800",
-    marginBottom: spacing.sm,
-    letterSpacing: 0.3,
-  },
-  homeSubtitle: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 20,
-    maxWidth: 320,
   },
   inlineRow: {
     flexDirection: "row",
@@ -471,6 +556,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: colors.surface,
     marginBottom: 22,
+    position: "relative",
   },
   featuredHomeImage: {
     minHeight: 280,
@@ -491,6 +577,15 @@ const styles = StyleSheet.create({
     padding: 22,
     justifyContent: "flex-end",
   },
+  overlayActionsRow: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    flexDirection: "row",
+  },
+  overlayActionButton: {
+    marginLeft: spacing.sm,
+  },
   heroLabel: {
     color: colors.textSecondary,
     fontSize: 13,
@@ -502,12 +597,23 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginBottom: spacing.sm,
   },
+  heroTitleFallback: {
+    color: colors.textPrimary,
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: spacing.sm,
+  },
   heroPlaceName: {
     color: colors.textSecondary,
     fontSize: 14,
     marginBottom: 6,
     marginLeft: spacing.sm,
     flexShrink: 1,
+  },
+  heroPlaceNameFallback: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginBottom: 8,
   },
   heroSubtitle: {
     color: "#EAF3ED",
@@ -516,46 +622,27 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 2,
   },
+  heroSubtitleFallback: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 2,
+  },
   emptyCard: {
+    marginBottom: spacing.xl,
+  },
+  emptyMiniCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.xxl,
-    padding: spacing.xl,
-    alignItems: "flex-start",
-  },
-  emptyIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: "center",
+    padding: 16,
+    marginBottom: spacing.xl,
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
   },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: spacing.sm,
-  },
-  emptyText: {
+  emptyMiniText: {
     color: colors.textMuted,
     fontSize: 14,
-    lineHeight: 21,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    color: colors.textPrimary,
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  sectionLink: {
-    color: "#A7BBB0",
-    fontSize: 14,
+    marginLeft: 10,
   },
   latestJourneyCard: {
     backgroundColor: colors.surface,
@@ -564,94 +651,67 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     overflow: "hidden",
   },
-  latestJourneyTop: {
+  latestJourneyHero: {
+    width: "100%",
+    height: 172,
+    borderRadius: radius.xl,
     marginBottom: spacing.md,
   },
-  latestJourneyTextWrap: {
+  latestJourneyFallback: {
+    height: 172,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceAlt,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  latestJourneyFallbackText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 8,
+  },
+  latestJourneyTop: {
     marginBottom: spacing.sm,
-    minWidth: 0,
+  },
+  latestJourneyHeaderRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 6,
   },
   latestJourneyTitle: {
     color: colors.white,
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "800",
-    marginBottom: spacing.xs,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   latestJourneyLocation: {
     color: colors.textSecondary,
     fontSize: 13,
+    marginBottom: spacing.sm,
   },
   latestJourneyDate: {
     color: colors.textDim,
     fontSize: 12,
+    marginTop: 2,
   },
   journeyMetaRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: spacing.md,
-  },
-  journeyMetaPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginRight: spacing.sm,
     marginBottom: spacing.sm,
   },
-  journeyMetaPillText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "600",
+  metaPillItem: {
+    marginRight: spacing.sm,
+    marginBottom: spacing.sm,
   },
   latestJourneyActions: {
     flexDirection: "row",
-    flexWrap: "wrap",
     alignItems: "center",
     marginTop: 2,
   },
-  placePrimaryAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  placePrimaryActionText: {
-    color: colors.textDark,
-    fontSize: 13,
-    fontWeight: "700",
-    marginLeft: 6,
-  },
-  placeSecondaryAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  placeSecondaryActionText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "600",
-    marginLeft: 6,
-  },
-  placeDeleteAction: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.sm,
+  latestActionButton: {
+    marginLeft: spacing.sm,
   },
   homeMiniCard: {
     backgroundColor: colors.surface,
@@ -661,6 +721,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
+  },
+  homeMiniMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
   },
   homeMiniImage: {
     width: 82,
@@ -700,25 +766,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   homeMiniActions: {
-    justifyContent: "space-between",
     alignSelf: "stretch",
-  },
-  homeMiniActionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accent,
-    alignItems: "center",
     justifyContent: "center",
-    marginBottom: spacing.sm,
-  },
-  homeMiniGhostButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: "center",
-    justifyContent: "center",
+    marginLeft: spacing.sm,
+    gap: 8,
   },
   routesShortcutCard: {
     backgroundColor: colors.surface,

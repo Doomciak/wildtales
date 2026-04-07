@@ -8,6 +8,8 @@ export default function FilterChip({ label, active, onPress }) {
     <Pressable
       style={[styles.filterChip, active && styles.filterChipActive]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
       <Text
         style={[styles.filterChipText, active && styles.filterChipTextActive]}

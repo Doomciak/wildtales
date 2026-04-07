@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, AppState } from "react-native";
 import * as Contacts from "expo-contacts";
 import * as SMS from "expo-sms";
 import * as Location from "expo-location";
@@ -15,8 +15,10 @@ import {
   getActiveTripSession,
   getLatestLocationLog,
   getLatestPendingLocationLog,
+  getLatestPendingLocationLogForTrip,
   getLocationLogsForTrip,
   getPendingLocationLogs,
+  getPendingLocationLogsForTrip,
   getRecentLocationLogs,
   getSafetyContact,
   incrementLocationLogAttempt,
@@ -27,28 +29,26 @@ import {
   startTripSession,
   stopTripSession,
 } from "../../db";
+import { BACKGROUND_LOCATION_TASK } from "./locationTask";
+import {
+  appendMeaningfulCoordinate,
+  buildCoordinateLabel,
+  buildPendingLocationLog,
+  buildPlaceNameFromCoords,
+  getCleanPointFromCoords,
+} from "./trackingHelpers";
 
 const AUTO_SMS_MAX_AGE_MS = 5 * 60 * 1000;
-const AUTO_CHECK_INTERVAL_MS = 30000;
-const LIVE_REFRESH_INTERVAL_MS = 15000;
+const AUTO_CHECK_INTERVAL_MS = 15000;
+const LIVE_REFRESH_INTERVAL_MS = 5000;
 
-function buildCoordinateLabel(latitude, longitude) {
-  return `${Number(latitude).toFixed(5)}, ${Number(longitude).toFixed(5)}`;
-}
+const LIVE_TRACK_TIME_INTERVAL_MS = 5000;
+const LIVE_TRACK_DISTANCE_INTERVAL_METERS = 5;
 
-function appendUniqueCoordinate(current, nextPoint) {
-  const lastPoint = current[current.length - 1];
+const BACKGROUND_TRACK_TIME_INTERVAL_MS = 8000;
+const BACKGROUND_TRACK_DISTANCE_INTERVAL_METERS = 8;
 
-  if (
-    lastPoint &&
-    lastPoint.latitude === nextPoint.latitude &&
-    lastPoint.longitude === nextPoint.longitude
-  ) {
-    return current;
-  }
-
-  return [...current, nextPoint];
-}
+const TEST_FALLBACK_DELAY_MS = 20000;
 
 async function isDeviceOffline() {
   try {
@@ -73,23 +73,61 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
   const [retryingUploads, setRetryingUploads] = useState(false);
   const [updatesMessage, setUpdatesMessage] = useState("");
   const [nowTimestamp, setNowTimestamp] = useState(Date.now());
+  const [smsFallbackTestActive, setSmsFallbackTestActive] = useState(false);
 
   const watchRef = useRef(null);
   const autoCheckRef = useRef(null);
   const liveRefreshRef = useRef(null);
+  const smsFallbackTestTimeoutRef = useRef(null);
   const autoSmsTriggeredIdsRef = useRef(new Set());
   const autoMaintenanceBusyRef = useRef(false);
   const syncBusyRef = useRef(false);
+  const routeCoordsRef = useRef([]);
+  const tripIdRef = useRef(null);
+
+  function setCurrentTripId(nextTripId) {
+    tripIdRef.current = nextTripId;
+    setTripId(nextTripId);
+  }
+
+  function setRouteState(nextCoords) {
+    routeCoordsRef.current = nextCoords;
+    setRouteCoords(nextCoords);
+  }
+
+  useEffect(() => {
+    tripIdRef.current = tripId;
+  }, [tripId]);
 
   useEffect(() => {
     loadInitialData();
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        const currentTripId = tripIdRef.current;
+
+        setNowTimestamp(Date.now());
+        refreshLogs();
+
+        if (currentTripId) {
+          refreshRoute(currentTripId);
+          runAutoMaintenance();
+        }
+      }
+    });
 
     return () => {
       stopWatchingOnly();
       stopAutoCheckOnly();
       stopLiveRefreshOnly();
+      stopFallbackTestOnly();
+      subscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    routeCoordsRef.current = routeCoords;
+  }, [routeCoords]);
 
   useEffect(() => {
     stopAutoCheckOnly();
@@ -112,6 +150,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
       liveRefreshRef.current = setInterval(() => {
         setNowTimestamp(Date.now());
         refreshLogs();
+        refreshRoute(tripId);
       }, LIVE_REFRESH_INTERVAL_MS);
     }
 
@@ -130,14 +169,17 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
       setLogs(recentLogs);
 
       if (activeTrip) {
-        setTripId(activeTrip.id);
+        setCurrentTripId(activeTrip.id);
         setTripActive(true);
         setNowTimestamp(Date.now());
         setUpdatesMessage("Trip restored from saved device data.");
         await refreshRoute(activeTrip.id);
+        await ensureBackgroundTrackingStarted();
         await beginWatching(activeTrip.id);
+        await runAutoMaintenance();
       } else {
-        setRouteCoords([]);
+        setCurrentTripId(null);
+        setRouteState([]);
         setTripLogs([]);
       }
     } catch (error) {
@@ -163,6 +205,62 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     if (liveRefreshRef.current) {
       clearInterval(liveRefreshRef.current);
       liveRefreshRef.current = null;
+    }
+  }
+
+  function stopFallbackTestOnly() {
+    if (smsFallbackTestTimeoutRef.current) {
+      clearTimeout(smsFallbackTestTimeoutRef.current);
+      smsFallbackTestTimeoutRef.current = null;
+    }
+
+    setSmsFallbackTestActive(false);
+  }
+
+  async function ensureBackgroundTrackingStarted() {
+    try {
+      const alreadyStarted = await Location.hasStartedLocationUpdatesAsync(
+        BACKGROUND_LOCATION_TASK
+      );
+
+      if (alreadyStarted) {
+        return true;
+      }
+
+      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: BACKGROUND_TRACK_TIME_INTERVAL_MS,
+        distanceInterval: BACKGROUND_TRACK_DISTANCE_INTERVAL_METERS,
+        pausesUpdatesAutomatically: false,
+        showsBackgroundLocationIndicator: false,
+        foregroundService: {
+          notificationTitle: "WildTales trip tracking",
+          notificationBody:
+            "WildTales is keeping your route updated while your trip is active.",
+          killServiceOnDestroy: false,
+        },
+      });
+
+      return true;
+    } catch (error) {
+      console.log("Start background tracking error:", error);
+      return false;
+    }
+  }
+
+  async function stopBackgroundTracking() {
+    try {
+      const alreadyStarted = await Location.hasStartedLocationUpdatesAsync(
+        BACKGROUND_LOCATION_TASK
+      );
+
+      if (!alreadyStarted) {
+        return;
+      }
+
+      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+    } catch (error) {
+      console.log("Stop background tracking error:", error);
     }
   }
 
@@ -202,36 +300,6 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     } catch (error) {
       console.log("Choose contact error:", error);
       Alert.alert("Contact error", "We could not choose that contact.");
-    }
-  }
-
-  async function buildPlaceName(latitude, longitude) {
-    const fallbackName = buildCoordinateLabel(latitude, longitude);
-
-    try {
-      const results = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
-
-      if (results.length === 0) {
-        return fallbackName;
-      }
-
-      const first = results[0];
-
-      return (
-        [first.city, first.country].filter(Boolean).join(", ") ||
-        first.district ||
-        first.subregion ||
-        first.region ||
-        first.name ||
-        first.street ||
-        fallbackName
-      );
-    } catch (error) {
-      console.log("Reverse geocode watch error:", error);
-      return fallbackName;
     }
   }
 
@@ -295,7 +363,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
   async function refreshRoute(currentTripId) {
     try {
       if (!currentTripId) {
-        setRouteCoords([]);
+        setRouteState([]);
         setTripLogs([]);
         return;
       }
@@ -303,20 +371,21 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
       const currentTripLogs = await getLocationLogsForTrip(currentTripId);
       setTripLogs(currentTripLogs);
 
-      const coords = currentTripLogs
-        .filter(
-          (log) =>
-            log.latitude != null &&
-            log.longitude != null &&
-            Number.isFinite(Number(log.latitude)) &&
-            Number.isFinite(Number(log.longitude))
-        )
-        .map((log) => ({
-          latitude: Number(log.latitude),
-          longitude: Number(log.longitude),
-        }));
+      const coords = currentTripLogs.reduce((allCoords, log) => {
+        const latitude = Number(log.latitude);
+        const longitude = Number(log.longitude);
 
-      setRouteCoords(coords);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          return allCoords;
+        }
+
+        return appendMeaningfulCoordinate(allCoords, {
+          latitude,
+          longitude,
+        });
+      }, []);
+
+      setRouteState(coords);
     } catch (error) {
       console.log("Refresh route error:", error);
     }
@@ -327,7 +396,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
 
     try {
       position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.High,
       });
     } catch (error) {
       console.log("Get current position error:", error);
@@ -343,6 +412,61 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     return position;
   }
 
+  async function saveTrackedPoint(position, currentTripId) {
+    const nextPoint = getCleanPointFromCoords(position?.coords);
+
+    if (!nextPoint) {
+      return false;
+    }
+
+    const nextRouteCoords = appendMeaningfulCoordinate(
+      routeCoordsRef.current,
+      nextPoint
+    );
+
+    if (nextRouteCoords === routeCoordsRef.current) {
+      return false;
+    }
+
+    setRouteState(nextRouteCoords);
+    setNowTimestamp(Date.now());
+
+    const placeName = await buildPlaceNameFromCoords(
+      nextPoint.latitude,
+      nextPoint.longitude,
+      "Reverse geocode watch error:"
+    );
+    const recordedAt = new Date().toISOString();
+
+    const newLogId = await saveLocationLog({
+      tripId: currentTripId,
+      latitude: nextPoint.latitude,
+      longitude: nextPoint.longitude,
+      placeName,
+      recordedAt,
+    });
+
+    const savedLog = buildPendingLocationLog({
+      id: newLogId,
+      tripId: currentTripId,
+      latitude: nextPoint.latitude,
+      longitude: nextPoint.longitude,
+      placeName,
+      recordedAt,
+    });
+
+    setTripLogs((current) => [...current, savedLog]);
+    await refreshLogs();
+
+    uploadSingleLog(savedLog)
+      .then(() => refreshLogs())
+      .catch((error) => {
+        console.log("Immediate upload error:", error);
+      });
+
+    return true;
+  }
+
   async function captureImmediateTripPoint(currentTripId) {
     try {
       const position = await getBestPosition();
@@ -351,40 +475,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
         return;
       }
 
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      const placeName = await buildPlaceName(latitude, longitude);
-      const recordedAt = new Date().toISOString();
-
-      const newLogId = await saveLocationLog({
-        tripId: currentTripId,
-        latitude,
-        longitude,
-        placeName,
-        recordedAt,
-      });
-
-      const savedLog = {
-        id: newLogId,
-        tripId: currentTripId,
-        latitude,
-        longitude,
-        placeName,
-        recordedAt,
-        sendStatus: "pending",
-        sendAttempts: 0,
-        lastAttemptAt: null,
-        sentVia: null,
-      };
-
-      const immediatePoint = { latitude, longitude };
-
-      setRouteCoords([immediatePoint]);
-      setTripLogs([savedLog]);
-      setNowTimestamp(Date.now());
-
-      await uploadSingleLog(savedLog);
-      await refreshLogs();
+      await saveTrackedPoint(position, currentTripId);
     } catch (error) {
       console.log("Immediate trip point error:", error);
     }
@@ -424,13 +515,17 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
 
     const message =
       `WildTales safety update\n` +
-      `Last known location: ${Number(log.latitude).toFixed(2)}, ${Number(
+      `Last known location: ${Number(log.latitude).toFixed(5)}, ${Number(
         log.longitude
-      ).toFixed(2)}\n` +
+      ).toFixed(5)}\n` +
       `${log.placeName ? `Place: ${log.placeName}\n` : ""}` +
       `Recorded: ${new Date(log.recordedAt).toLocaleString()}`;
 
-    await SMS.sendSMSAsync([contact.phone], message);
+    const smsResult = await SMS.sendSMSAsync([contact.phone], message);
+
+    if (smsResult?.result === "cancelled") {
+      return false;
+    }
 
     if (log.id) {
       await markLocationLogSmsPrepared(log.id);
@@ -442,11 +537,11 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
 
   async function checkAutoSmsFallback() {
     try {
-      if (!tripActive || !contact) {
+      if (!tripActive || !contact || !tripId) {
         return;
       }
 
-      const pendingLogs = await getPendingLocationLogs();
+      const pendingLogs = await getPendingLocationLogsForTrip(tripId);
 
       if (!pendingLogs.length) {
         return;
@@ -471,14 +566,16 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
         "Online sending has not worked, so a text update will open with the latest saved location."
       );
 
-      const latestSavedLog = pendingLogs[pendingLogs.length - 1] || fallbackLog;
-      const smsOpened = await sendSmsForLog(latestSavedLog);
+      const smsOpened = await sendSmsForLog(fallbackLog);
 
       if (smsOpened) {
         setUpdatesMessage(
           "Text update opened because online sending was delayed."
         );
+        return;
       }
+
+      autoSmsTriggeredIdsRef.current.delete(fallbackLog.id);
     } catch (error) {
       console.log("Auto text fallback error:", error);
     }
@@ -513,7 +610,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
 
       if (offline) {
         setUpdatesMessage(
-          "Online updates are unavailable while you are offline."
+          "Online updates are unavailable right now, but route tracking is still saving on this device."
         );
         return;
       }
@@ -560,58 +657,26 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
 
     watchRef.current = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.Balanced,
-        timeInterval: 30000,
-        distanceInterval: 20,
+        accuracy: Location.Accuracy.High,
+        timeInterval: LIVE_TRACK_TIME_INTERVAL_MS,
+        distanceInterval: LIVE_TRACK_DISTANCE_INTERVAL_METERS,
       },
       async (position) => {
         try {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-          const placeName = await buildPlaceName(latitude, longitude);
-          const recordedAt = new Date().toISOString();
-
-          const newLogId = await saveLocationLog({
-            tripId: currentTripId,
-            latitude,
-            longitude,
-            placeName,
-            recordedAt,
-          });
-
-          const savedLog = {
-            id: newLogId,
-            tripId: currentTripId,
-            latitude,
-            longitude,
-            placeName,
-            recordedAt,
-            sendStatus: "pending",
-            sendAttempts: 0,
-            lastAttemptAt: null,
-            sentVia: null,
-          };
-
-          const nextPoint = { latitude, longitude };
-
-          setRouteCoords((current) => appendUniqueCoordinate(current, nextPoint));
-          setTripLogs((current) => [...current, savedLog]);
-          setNowTimestamp(Date.now());
-
-          await uploadSingleLog(savedLog);
-          await refreshLogs();
+          await saveTrackedPoint(position, currentTripId);
         } catch (error) {
           console.log("Watch callback error:", error);
+          setUpdatesMessage(
+            "Location tracking hit a problem, but the trip is still active."
+          );
         }
-      },
-      (reason) => {
-        console.log("Watch position error:", reason);
-        setUpdatesMessage("Location tracking could not continue on this device.");
       }
     );
   }
 
   async function startTrip() {
+    let newTripId = null;
+
     try {
       if (tripActive) {
         return;
@@ -622,20 +687,10 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
         return;
       }
 
-      const offline = await isDeviceOffline();
+      const foregroundPermission =
+        await Location.requestForegroundPermissionsAsync();
 
-      if (offline) {
-        setUpdatesMessage("This feature does not work while you are offline.");
-        Alert.alert(
-          "Offline",
-          "Trip tracking is unavailable offline in this version."
-        );
-        return;
-      }
-
-      const permission = await Location.requestForegroundPermissionsAsync();
-
-      if (!permission.granted) {
+      if (!foregroundPermission.granted) {
         Alert.alert(
           "Permission needed",
           "Please allow location access before starting a trip."
@@ -653,23 +708,61 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
         return;
       }
 
+      const backgroundPermission =
+        await Location.requestBackgroundPermissionsAsync();
+
+      const hasBackgroundPermission = backgroundPermission.granted;
+      const offline = await isDeviceOffline();
+
       autoSmsTriggeredIdsRef.current.clear();
-      setUpdatesMessage("Trip started. Live route is now tracking.");
+      stopFallbackTestOnly();
 
-      const newTripId = await startTripSession();
+      newTripId = await startTripSession();
 
-      setTripId(newTripId);
+      setCurrentTripId(newTripId);
       setTripActive(true);
-      setRouteCoords([]);
       setTripLogs([]);
+      setRouteState([]);
       setNowTimestamp(Date.now());
+
+      const backgroundStarted = hasBackgroundPermission
+        ? await ensureBackgroundTrackingStarted()
+        : false;
+
+      setUpdatesMessage(
+        backgroundStarted
+          ? offline
+            ? "Trip started. Background route tracking is active and online uploads will retry when signal returns."
+            : "Trip started. Background route tracking is active."
+          : hasBackgroundPermission
+          ? "Trip started. Live route is tracking, but background tracking could not start on this device."
+          : "Trip started. Live route is tracking. To keep tracking in your pocket, allow background location on Android."
+      );
 
       await captureImmediateTripPoint(newTripId);
       await beginWatching(newTripId);
       await refreshLogs();
-      await syncPendingUploadsSilently();
+      await runAutoMaintenance();
     } catch (error) {
       console.log("Start trip error:", error);
+
+      stopWatchingOnly();
+      stopAutoCheckOnly();
+      stopLiveRefreshOnly();
+      stopFallbackTestOnly();
+      await stopBackgroundTracking();
+
+      if (newTripId) {
+        await stopTripSession(newTripId);
+      }
+
+      setCurrentTripId(null);
+      setTripActive(false);
+      setTripLogs([]);
+      setRouteState([]);
+      setNowTimestamp(Date.now());
+      setUpdatesMessage("");
+
       Alert.alert("Trip error", "We could not start tracking this trip.");
     }
   }
@@ -727,24 +820,30 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     };
   }
 
-  async function stopTrip() {
+  async function stopTrip(extraData = {}) {
     try {
-      const finishedTrip = buildFinishedTripSummary();
+      const currentTripId = tripIdRef.current;
+      const baseSummary = buildFinishedTripSummary();
+      const finishedTrip = baseSummary ? { ...baseSummary, ...extraData } : null;
 
       stopWatchingOnly();
       stopAutoCheckOnly();
       stopLiveRefreshOnly();
+      stopFallbackTestOnly();
+      await stopBackgroundTracking();
 
-      if (tripId) {
-        await stopTripSession(tripId);
+      if (currentTripId) {
+        await stopTripSession(currentTripId);
       }
 
+      autoSmsTriggeredIdsRef.current.clear();
       setTripActive(false);
-      setTripId(null);
-      setRouteCoords([]);
+      setCurrentTripId(null);
       setTripLogs([]);
+      setRouteState([]);
       setNowTimestamp(Date.now());
       setUpdatesMessage("Trip stopped.");
+
       await refreshLogs();
 
       if (finishedTrip && typeof onTripFinished === "function") {
@@ -758,7 +857,15 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
 
   async function sendLatestLocationSms() {
     try {
-      let latestLog = await getLatestPendingLocationLog();
+      let latestLog = null;
+
+      if (tripActive && tripId) {
+        latestLog = await getLatestPendingLocationLogForTrip(tripId);
+      }
+
+      if (!latestLog) {
+        latestLog = await getLatestPendingLocationLog();
+      }
 
       if (!latestLog) {
         latestLog = await getLatestLocationLog();
@@ -795,6 +902,123 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     } catch (error) {
       console.log("Send SMS error:", error);
       Alert.alert("Text error", "We could not open the text update.");
+    }
+  }
+
+  async function triggerSmsFallbackTest() {
+    try {
+      if (smsFallbackTestActive) {
+        return;
+      }
+
+      if (!tripActive || !tripId) {
+        Alert.alert(
+          "Start trip first",
+          "Start a trip first so the app has a live location to test."
+        );
+        return;
+      }
+
+      if (!contact) {
+        Alert.alert("No contact", "Please choose a safety contact first.");
+        return;
+      }
+
+      let testLog = await getLatestPendingLocationLogForTrip(tripId);
+
+      if (!testLog) {
+        const position = await getBestPosition();
+
+        if (!position) {
+          Alert.alert(
+            "No location",
+            "We could not get a test location. Try again in a moment."
+          );
+          return;
+        }
+
+        const nextPoint = getCleanPointFromCoords(position?.coords);
+
+        if (!nextPoint) {
+          Alert.alert(
+            "Location not ready",
+            "Location accuracy is still too weak. Try again in a few seconds."
+          );
+          return;
+        }
+
+        const nextRouteCoords = appendMeaningfulCoordinate(
+          routeCoordsRef.current,
+          nextPoint
+        );
+
+        if (nextRouteCoords !== routeCoordsRef.current) {
+          setRouteState(nextRouteCoords);
+        }
+
+        setNowTimestamp(Date.now());
+
+        const placeName = await buildPlaceNameFromCoords(
+          nextPoint.latitude,
+          nextPoint.longitude,
+          "Reverse geocode watch error:"
+        );
+        const recordedAt = new Date().toISOString();
+
+        const newLogId = await saveLocationLog({
+          tripId,
+          latitude: nextPoint.latitude,
+          longitude: nextPoint.longitude,
+          placeName,
+          recordedAt,
+        });
+
+        testLog = buildPendingLocationLog({
+          id: newLogId,
+          tripId,
+          latitude: nextPoint.latitude,
+          longitude: nextPoint.longitude,
+          placeName,
+          recordedAt,
+        });
+
+        setTripLogs((current) => [...current, testLog]);
+        await refreshLogs();
+      }
+
+      if (!testLog?.id) {
+        Alert.alert(
+          "No pending update",
+          "We could not create a test update for this trip."
+        );
+        return;
+      }
+
+      setSmsFallbackTestActive(true);
+      setUpdatesMessage(
+        "Fallback test started. In 20 seconds the app will open the text fallback using a test location log."
+      );
+
+      smsFallbackTestTimeoutRef.current = setTimeout(async () => {
+        try {
+          await incrementLocationLogAttempt(testLog.id);
+          await incrementLocationLogAttempt(testLog.id);
+          await incrementLocationLogAttempt(testLog.id);
+
+          await refreshLogs();
+          await checkAutoSmsFallback();
+        } catch (error) {
+          console.log("Fallback test error:", error);
+          setUpdatesMessage("Fallback test failed.");
+        } finally {
+          smsFallbackTestTimeoutRef.current = null;
+          setSmsFallbackTestActive(false);
+        }
+      }, TEST_FALLBACK_DELAY_MS);
+    } catch (error) {
+      console.log("Trigger fallback test error:", error);
+      setSmsFallbackTestActive(false);
+      setUpdatesMessage("Fallback test failed.");
     }
   }
 
@@ -874,6 +1098,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     retryingUploads,
     updatesMessage,
     nowTimestamp,
+    smsFallbackTestActive,
 
     latestRoutePoint,
     liveRegion,
@@ -889,6 +1114,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     sendLatestLocationSms,
     refreshLogs,
     refreshRoute,
+    triggerSmsFallbackTest,
     getShortStatus,
     getStatusIcon,
   };

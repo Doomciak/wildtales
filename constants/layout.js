@@ -22,9 +22,12 @@ export const radius = {
 
 export const screen = {
   topPadding: 68,
-  bottomSpacing: Platform.OS === "android" ? 120 : 96,
-  tabBarBottomPadding: Platform.OS === "android" ? 30 : 20,
-  tabBarMinHeight: Platform.OS === "android" ? 88 : 78,
+  bottomSpacing: Platform.OS === "android" ? 82 : 76,
+  tabBarBottomOffset: Platform.OS === "android" ? 8 : 10,
+  tabBarBottomPadding: Platform.OS === "android" ? 10 : 10,
+  tabBarTopPadding: Platform.OS === "android" ? 10 : 10,
+  tabBarMinHeight: Platform.OS === "android" ? 64 : 62,
+  tabBarSideInset: Platform.OS === "android" ? 16 : 18,
 };
 
 export const iconSizes = {

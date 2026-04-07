@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Marker } from "react-native-maps";
 
@@ -10,16 +11,29 @@ export default function WildMarker({
   size = 34,
   onPress,
 }) {
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+
+    const timeout = setTimeout(() => {
+      setTracksViewChanges(false);
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [coordinate?.latitude, coordinate?.longitude, size]);
+
   return (
     <Marker
       coordinate={coordinate}
       title={title}
       description={description}
       onPress={onPress}
-      tracksViewChanges={false}
+      tracksViewChanges={tracksViewChanges}
+      anchor={{ x: 0.5, y: 0.92 }}
     >
       <View
-        style={[styles.svgMarkerWrap, { width: size, height: size }]}
+        style={[styles.markerWrap, { width: size, height: size }]}
         collapsable={false}
       >
         <TrackingMarker width={size} height={size} />
@@ -29,7 +43,7 @@ export default function WildMarker({
 }
 
 const styles = StyleSheet.create({
-  svgMarkerWrap: {
+  markerWrap: {
     alignItems: "center",
     justifyContent: "center",
   },

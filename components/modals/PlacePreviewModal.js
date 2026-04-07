@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
   Image,
   Modal,
@@ -10,6 +10,11 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
+import ImageGalleryModal from "./shared/ImageGalleryModal";
+import ModalActionRow from "./shared/ModalActionRow";
+import ModalCardShell from "./shared/ModalCardShell";
+import ModalHeader from "./shared/ModalHeader";
+import useImageGallery from "../../hooks/useImageGallery";
 import { colors } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 import {
@@ -22,62 +27,125 @@ export default function PlacePreviewModal({
   place,
   onClose,
   onEditPlace,
+  onDeletePlace,
   activeRouteLink,
 }) {
-  const [previewImageIndex, setPreviewImageIndex] = useState(0);
+  const previewImages = useMemo(() => {
+    if (!place) {
+      return [];
+    }
 
-  useEffect(() => {
-    setPreviewImageIndex(0);
-  }, [place?.id]);
+    const images = Array.isArray(place.images)
+      ? place.images.filter(Boolean)
+      : [];
 
-  const previewImages = place?.images || [];
-  const selectedPreviewImage = previewImages[previewImageIndex] || null;
+    if (images.length > 0) {
+      return images;
+    }
+
+    if (place.coverImage) {
+      return [place.coverImage];
+    }
+
+    return [];
+  }, [place]);
+
+  const gallerySourceItems = useMemo(
+    () =>
+      previewImages.map((uri) => ({
+        uri,
+        type: "photo",
+        label: "Place photo",
+      })),
+    [previewImages]
+  );
+
+  const {
+    galleryItems,
+    galleryVisible,
+    previewImageIndex,
+    selectedItem,
+    setPreviewImageIndex,
+    openGalleryAt,
+    closeGallery,
+    showPreviousItem,
+    showNextItem,
+  } = useImageGallery(gallerySourceItems, place?.id);
+
+  const selectedPreviewImage = selectedItem?.uri || null;
   const previewHasLiveRoute =
     !!activeRouteLink && activeRouteLink.placeId === place?.id;
 
   return (
-    <Modal visible={Boolean(place)} transparent animationType="fade">
-      <View style={styles.previewOverlay}>
-        <View style={styles.previewModal}>
-          <View style={styles.previewHeader}>
-            <Text style={styles.previewHeaderTitle}>Place preview</Text>
-
-            <Pressable style={styles.previewCloseButton} onPress={onClose}>
-              <Feather name="x" size={18} color={colors.textSecondary} />
-            </Pressable>
-          </View>
+    <>
+      <Modal
+        visible={Boolean(place)}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+      >
+        <ModalCardShell>
+          <ModalHeader
+            title="Place preview"
+            onClose={onClose}
+            closeLabel="Close place preview"
+            titleStyle={styles.previewHeaderTitle}
+          />
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {selectedPreviewImage ? (
-              <Image
-                source={{ uri: selectedPreviewImage }}
-                style={styles.previewMainImage}
-              />
-            ) : (
-              <View style={styles.previewMainFallback}>
-                <Text style={styles.previewFallbackLetter}>
-                  {String(place?.title || "").charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+            <View style={styles.previewImageSection}>
+              {selectedPreviewImage ? (
+                <Image
+                  source={{ uri: selectedPreviewImage }}
+                  style={styles.previewMainImage}
+                />
+              ) : (
+                <View style={styles.previewMainFallback}>
+                  <Text style={styles.previewFallbackLetter}>
+                    {String(place?.title || "").charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
 
-            {previewImages.length > 1 ? (
+              {galleryItems.length > 0 ? (
+                <Pressable
+                  style={styles.photosBadge}
+                  onPress={() => openGalleryAt(previewImageIndex)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open gallery with ${galleryItems.length} photo${
+                    galleryItems.length === 1 ? "" : "s"
+                  }`}
+                >
+                  <Ionicons
+                    name="images-outline"
+                    size={14}
+                    color={colors.textDark}
+                  />
+                  <Text style={styles.photosBadgeText}>{galleryItems.length}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {galleryItems.length > 1 ? (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.previewThumbRow}
               >
-                {previewImages.map((uri, index) => (
+                {galleryItems.map((item, index) => (
                   <Pressable
-                    key={`${uri}-${index}`}
-                    onPress={() => setPreviewImageIndex(index)}
+                    key={`${item.uri}-${index}`}
+                    onPress={() => openGalleryAt(index)}
                     style={[
                       styles.previewThumbWrap,
                       previewImageIndex === index &&
                         styles.previewThumbWrapActive,
                     ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open photo ${index + 1}`}
                   >
-                    <Image source={{ uri }} style={styles.previewThumb} />
+                    <Image source={{ uri: item.uri }} style={styles.previewThumb} />
                   </Pressable>
                 ))}
               </ScrollView>
@@ -135,65 +203,63 @@ export default function PlacePreviewModal({
             <Text style={styles.previewNote}>{place?.note}</Text>
           </ScrollView>
 
-          <View style={styles.previewFooter}>
-            <Pressable style={styles.previewButtonWide} onPress={onClose}>
-              <Text style={styles.previewButtonWideText}>Close</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.editButtonWide}
-              onPress={() => {
+          <ModalActionRow
+            leftAction={{
+              label: "Edit place",
+              onPress: () => {
                 const placeToEdit = place;
                 onClose();
                 onEditPlace(placeToEdit);
-              }}
-            >
-              <Text style={styles.editButtonWideText}>Edit place</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
+              },
+              iconName: "edit-2",
+              variant: "accent",
+              accessibilityLabel: "Edit place",
+            }}
+            rightAction={{
+              label: "Delete",
+              onPress: () => {
+                const currentPlace = place;
+                onClose();
+                onDeletePlace?.(currentPlace.id);
+              },
+              iconName: "trash-2",
+              variant: "muted",
+              accessibilityLabel: "Delete place",
+            }}
+          />
+        </ModalCardShell>
+      </Modal>
+
+      <ImageGalleryModal
+        visible={galleryVisible}
+        onClose={closeGallery}
+        items={galleryItems}
+        index={previewImageIndex}
+        onChangeIndex={setPreviewImageIndex}
+        onPrevious={showPreviousItem}
+        onNext={showNextItem}
+        previousLabel="Previous photo"
+        nextLabel="Next photo"
+        selectLabelPrefix="Select photo"
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: colors.overlayDark,
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  previewModal: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxxl + 2,
-    padding: 18,
-    maxHeight: "88%",
-  },
-  previewHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.lg - 2,
-  },
   previewHeaderTitle: {
-    color: colors.textPrimary,
     fontSize: 20,
     fontWeight: "700",
+    marginBottom: 0,
   },
-  previewCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: "center",
-    alignItems: "center",
+  previewImageSection: {
+    position: "relative",
+    marginBottom: spacing.lg - 2,
   },
   previewMainImage: {
     width: "100%",
     height: 260,
     borderRadius: radius.xxl - 2,
-    marginBottom: spacing.lg - 2,
   },
   previewMainFallback: {
     width: "100%",
@@ -202,12 +268,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: spacing.lg - 2,
   },
   previewFallbackLetter: {
     color: colors.textPrimary,
     fontSize: 42,
     fontWeight: "700",
+  },
+  photosBadge: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  photosBadgeText: {
+    color: colors.textDark,
+    fontSize: 13,
+    fontWeight: "700",
+    marginLeft: 6,
   },
   previewThumbRow: {
     paddingRight: 6,
@@ -269,35 +351,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 10,
     marginBottom: spacing.sm,
-  },
-  previewFooter: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  previewButtonWide: {
-    flex: 1,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginRight: 6,
-  },
-  previewButtonWideText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  editButtonWide: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginLeft: 6,
-  },
-  editButtonWideText: {
-    color: colors.textDark,
-    fontSize: 14,
-    fontWeight: "700",
   },
 });

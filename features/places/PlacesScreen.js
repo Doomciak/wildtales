@@ -5,16 +5,19 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import * as Network from "expo-network";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-import FilterChip from "../../components/ui/FilterChip";
 import WildMarker from "../../components/maps/WildMarker";
 import PlacePreviewModal from "../../components/modals/PlacePreviewModal";
+import ActionIconButton from "../../components/ui/ActionIconButton";
+import CollectionControls from "../../components/ui/CollectionControls";
+import EmptyStateCard from "../../components/ui/EmptyStateCard";
+import InfoPill from "../../components/ui/InfoPill";
+import ScreenHeader from "../../components/ui/ScreenHeader";
 import { colors, shadows } from "../../constants/theme";
 import { radius, screen, spacing } from "../../constants/layout";
 import {
@@ -86,8 +89,7 @@ export default function PlacesScreen({
     );
   }, [mapRegion]);
 
-  const canRenderMap =
-    !isOffline && mapPlaces.length > 0 && hasValidMapRegion;
+  const canRenderMap = !isOffline && mapPlaces.length > 0 && hasValidMapRegion;
 
   const mapKey = useMemo(() => {
     return `places-map-${mapPlaces.map((place) => place.id).join("-") || "empty"}`;
@@ -99,13 +101,10 @@ export default function PlacesScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.topArea}>
-          <Text style={styles.title}>Places</Text>
-          <Text style={styles.subtitle}>
-            Browse your saved places in a cleaner list, or switch to map view
-            when you want the bigger picture.
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Places"
+          subtitle="Browse your saved memories, open them quickly, or explore them on the map."
+        />
 
         <View style={styles.segmentWrap}>
           <Pressable
@@ -157,115 +156,42 @@ export default function PlacesScreen({
           </Pressable>
         </View>
 
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={18} color="#9fb2a6" />
-            <TextInput
-              placeholder="Search places"
-              placeholderTextColor="#9fb2a6"
-              style={styles.searchInput}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.trim() ? (
-              <Pressable
-                onPress={() => setSearch("")}
-                style={styles.searchClearButton}
-              >
-                <Ionicons name="close-circle" size={18} color="#9fb2a6" />
-              </Pressable>
-            ) : null}
-          </View>
-
-          <Pressable
-            style={[
-              styles.filterToggleButton,
-              showFilters && styles.filterToggleButtonActive,
-            ]}
-            onPress={() => setShowFilters((current) => !current)}
-          >
-            <Feather
-              name="sliders"
-              size={18}
-              color={showFilters ? colors.textDark : colors.textSecondary}
-            />
-
-            {activeFilterCount > 0 ? (
-              <View style={styles.filterCountBadge}>
-                <Text style={styles.filterCountText}>{activeFilterCount}</Text>
-              </View>
-            ) : null}
-          </Pressable>
-        </View>
-
-        {showFilters ? (
-          <View style={styles.filtersDropdown}>
-            <View style={styles.filtersHeader}>
-              <Text style={styles.filtersTitle}>Filters</Text>
-
-              {hasActiveFilters ? (
-                <Pressable
-                  style={styles.clearFiltersButton}
-                  onPress={onClearFilters}
-                >
-                  <Text style={styles.clearFiltersText}>Clear</Text>
-                </Pressable>
-              ) : null}
-            </View>
-
-            <Text style={styles.filterLabel}>Country</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filtersRow}
-            >
-              {countries.map((item) => (
-                <FilterChip
-                  key={`country-${item}`}
-                  label={item}
-                  active={selectedCountry === item}
-                  onPress={() => onSelectCountry(item)}
-                />
-              ))}
-            </ScrollView>
-
-            <Text style={styles.filterLabel}>City</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filtersRow}
-            >
-              {cities.map((item) => (
-                <FilterChip
-                  key={`city-${item}`}
-                  label={item}
-                  active={selectedCity === item}
-                  onPress={() => onSelectCity(item)}
-                />
-              ))}
-            </ScrollView>
-
-            <Text style={styles.filterSummary}>
-              Showing {places.length} of {totalPlaces} places
-            </Text>
-          </View>
-        ) : null}
+        <CollectionControls
+          search={search}
+          onChangeSearch={setSearch}
+          searchPlaceholder="Search places"
+          showControls={showFilters}
+          onToggleControls={() => setShowFilters((current) => !current)}
+          activeCount={activeFilterCount}
+          hasActiveControls={hasActiveFilters}
+          onClear={onClearFilters}
+          summary={`Showing ${places.length} of ${totalPlaces} places`}
+          toggleAccessibilityLabel="Open place filters and sorting"
+          sections={[
+            {
+              key: "country",
+              title: "Country",
+              options: countries,
+              selectedValue: selectedCountry,
+              onSelect: onSelectCountry,
+            },
+            {
+              key: "city",
+              title: "City",
+              options: cities,
+              selectedValue: selectedCity,
+              onSelect: onSelectCity,
+            },
+          ]}
+        />
 
         {viewMode === "map" ? (
           mapPlaces.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons
-                  name="map-outline"
-                  size={24}
-                  color={colors.textSecondary}
-                />
-              </View>
-              <Text style={styles.emptyTitle}>No map points yet</Text>
-              <Text style={styles.emptyText}>
-                Save a place with location and it will appear here.
-              </Text>
-            </View>
+            <EmptyStateCard
+              icon="map-outline"
+              title="No map points yet"
+              text="Save a place with location and it will appear here."
+            />
           ) : !canRenderMap ? (
             <>
               <View style={styles.offlineMapCard}>
@@ -288,7 +214,10 @@ export default function PlacesScreen({
               >
                 {mapPlaces.map((place) => (
                   <View key={place.id} style={styles.mapPlaceCard}>
-                    <Pressable onPress={() => setPreviewPlace(place)}>
+                    <Pressable
+                      style={styles.mapPlaceMain}
+                      onPress={() => setPreviewPlace(place)}
+                    >
                       <Text style={styles.mapPlaceTitle}>{place.title}</Text>
 
                       {getPlaceLocationText(place) ? (
@@ -303,36 +232,19 @@ export default function PlacesScreen({
                     </Pressable>
 
                     <View style={styles.mapPlaceActions}>
-                      <Pressable
-                        style={styles.mapPlaceActionPrimary}
-                        onPress={() => setPreviewPlace(place)}
-                      >
-                        <Feather name="eye" size={13} color={colors.textDark} />
-                        <Text style={styles.mapPlaceActionTextDark}>Open</Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={styles.mapPlaceActionGhost}
+                      <ActionIconButton
+                        icon="edit-2"
                         onPress={() => onEditPlace(place)}
-                      >
-                        <Feather
-                          name="edit-2"
-                          size={13}
-                          color={colors.textSecondary}
-                        />
-                        <Text style={styles.mapPlaceActionTextLight}>Edit</Text>
-                      </Pressable>
+                        accessibilityLabel={`Edit ${place.title}`}
+                      />
 
-                      <Pressable
-                        style={styles.mapPlaceActionDelete}
+                      <ActionIconButton
+                        icon="trash-2"
                         onPress={() => onRemovePlace(place.id)}
-                      >
-                        <Feather
-                          name="trash-2"
-                          size={13}
-                          color={colors.textSecondary}
-                        />
-                      </Pressable>
+                        accessibilityLabel={`Delete ${place.title}`}
+                        variant="danger"
+                        style={styles.mapActionButton}
+                      />
                     </View>
                   </View>
                 ))}
@@ -370,7 +282,10 @@ export default function PlacesScreen({
               >
                 {mapPlaces.map((place) => (
                   <View key={place.id} style={styles.mapPlaceCard}>
-                    <Pressable onPress={() => setPreviewPlace(place)}>
+                    <Pressable
+                      style={styles.mapPlaceMain}
+                      onPress={() => setPreviewPlace(place)}
+                    >
                       <Text style={styles.mapPlaceTitle}>{place.title}</Text>
 
                       {getPlaceLocationText(place) ? (
@@ -385,36 +300,19 @@ export default function PlacesScreen({
                     </Pressable>
 
                     <View style={styles.mapPlaceActions}>
-                      <Pressable
-                        style={styles.mapPlaceActionPrimary}
-                        onPress={() => setPreviewPlace(place)}
-                      >
-                        <Feather name="eye" size={13} color={colors.textDark} />
-                        <Text style={styles.mapPlaceActionTextDark}>Open</Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={styles.mapPlaceActionGhost}
+                      <ActionIconButton
+                        icon="edit-2"
                         onPress={() => onEditPlace(place)}
-                      >
-                        <Feather
-                          name="edit-2"
-                          size={13}
-                          color={colors.textSecondary}
-                        />
-                        <Text style={styles.mapPlaceActionTextLight}>Edit</Text>
-                      </Pressable>
+                        accessibilityLabel={`Edit ${place.title}`}
+                      />
 
-                      <Pressable
-                        style={styles.mapPlaceActionDelete}
+                      <ActionIconButton
+                        icon="trash-2"
                         onPress={() => onRemovePlace(place.id)}
-                      >
-                        <Feather
-                          name="trash-2"
-                          size={13}
-                          color={colors.textSecondary}
-                        />
-                      </Pressable>
+                        accessibilityLabel={`Delete ${place.title}`}
+                        variant="danger"
+                        style={styles.mapActionButton}
+                      />
                     </View>
                   </View>
                 ))}
@@ -422,19 +320,12 @@ export default function PlacesScreen({
             </>
           )
         ) : places.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIconWrap}>
-              <MaterialCommunityIcons
-                name="map-marker-path"
-                size={24}
-                color={colors.textSecondary}
-              />
-            </View>
-            <Text style={styles.emptyTitle}>No places found</Text>
-            <Text style={styles.emptyText}>
-              Try another search, change filters, or add a new place.
-            </Text>
-          </View>
+          <EmptyStateCard
+            icon="map-marker-path"
+            iconSet="material-community"
+            title="No places found"
+            text="Try another search, change filters, or add a new place."
+          />
         ) : (
           places.map((place) => {
             const placeLocationText = getPlaceLocationText(place);
@@ -443,101 +334,85 @@ export default function PlacesScreen({
 
             return (
               <View key={place.id} style={styles.placeListCard}>
-                {place.coverImage ? (
-                  <Image
-                    source={{ uri: place.coverImage }}
-                    style={styles.placeListImage}
-                  />
-                ) : (
-                  <View style={[styles.placeListImage, styles.placeListFallback]}>
-                    <Text style={styles.placeListLetter}>
-                      {String(place.title).charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.placeListBody}>
-                  <Text style={styles.placeListTitle} numberOfLines={1}>
-                    {place.title}
-                  </Text>
-
-                  {placeLocationText ? (
-                    <View style={styles.inlineRowNoMargin}>
-                      <Ionicons
-                        name="location-outline"
-                        size={13}
-                        color={colors.textMuted}
-                      />
-                      <Text style={styles.placeListMeta} numberOfLines={1}>
-                        {placeLocationText}
+                <Pressable
+                  style={styles.placeListMain}
+                  onPress={() => setPreviewPlace(place)}
+                >
+                  {place.coverImage ? (
+                    <Image
+                      source={{ uri: place.coverImage }}
+                      style={styles.placeListImage}
+                    />
+                  ) : (
+                    <View style={[styles.placeListImage, styles.placeListFallback]}>
+                      <Text style={styles.placeListLetter}>
+                        {String(place.title).charAt(0).toUpperCase()}
                       </Text>
                     </View>
-                  ) : null}
+                  )}
 
-                  <Text style={styles.placeListNote} numberOfLines={2}>
-                    {place.note}
-                  </Text>
+                  <View style={styles.placeListBody}>
+                    <Text style={styles.placeListTitle} numberOfLines={1}>
+                      {place.title}
+                    </Text>
 
-                  <View style={styles.placeListPills}>
-                    {place.images?.length > 1 ? (
-                      <View style={styles.placeListPill}>
-                        <Feather
-                          name="image"
-                          size={12}
-                          color={colors.textSecondary}
-                        />
-                        <Text style={styles.placeListPillText}>
-                          {place.images.length} photos
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    {hasLiveRoute && activeRouteLink ? (
-                      <View style={styles.placeListLivePill}>
+                    {placeLocationText ? (
+                      <View style={styles.inlineRowNoMargin}>
                         <Ionicons
-                          name="navigate"
-                          size={12}
-                          color={colors.textDark}
+                          name="location-outline"
+                          size={13}
+                          color={colors.textMuted}
                         />
-                        <Text style={styles.placeListLivePillText}>
-                          {formatDistanceKm(activeRouteLink.totalDistanceKm)}
+                        <Text style={styles.placeListMeta} numberOfLines={1}>
+                          {placeLocationText}
                         </Text>
                       </View>
                     ) : null}
+
+                    <Text style={styles.placeListNote} numberOfLines={2}>
+                      {place.note}
+                    </Text>
+
+                    <View style={styles.placeListPills}>
+                      {place.images?.length > 0 ? (
+                        <InfoPill
+                          icon="image"
+                          iconSet="feather"
+                          label={`${place.images.length} photo${
+                            place.images.length === 1 ? "" : "s"
+                          }`}
+                          onPress={() => setPreviewPlace(place)}
+                          accessibilityLabel={`Open ${place.images.length} photos for ${place.title}`}
+                          style={styles.placePillItem}
+                        />
+                      ) : null}
+
+                      {hasLiveRoute && activeRouteLink ? (
+                        <InfoPill
+                          icon="navigate"
+                          label={formatDistanceKm(activeRouteLink.totalDistanceKm)}
+                          variant="accent"
+                          style={styles.placePillItem}
+                        />
+                      ) : null}
+                    </View>
                   </View>
+                </Pressable>
 
-                  <View style={styles.placeListActions}>
-                    <Pressable
-                      style={styles.placePrimaryAction}
-                      onPress={() => setPreviewPlace(place)}
-                    >
-                      <Feather name="eye" size={14} color={colors.textDark} />
-                      <Text style={styles.placePrimaryActionText}>Preview</Text>
-                    </Pressable>
+                <View style={styles.placeListActions}>
+                  <ActionIconButton
+                    icon="edit-2"
+                    onPress={() => onEditPlace(place)}
+                    accessibilityLabel={`Edit ${place.title}`}
+                  />
 
-                    <Pressable
-                      style={styles.placeSecondaryAction}
-                      onPress={() => onEditPlace(place)}
-                    >
-                      <Feather
-                        name="edit-2"
-                        size={14}
-                        color={colors.textSecondary}
-                      />
-                      <Text style={styles.placeSecondaryActionText}>Edit</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.placeDeleteAction}
-                      onPress={() => onRemovePlace(place.id)}
-                    >
-                      <Feather
-                        name="trash-2"
-                        size={14}
-                        color={colors.textSecondary}
-                      />
-                    </Pressable>
-                  </View>
+                  <ActionIconButton
+                    icon="trash-2"
+                    onPress={() => onRemovePlace(place.id)}
+                    accessibilityLabel={`Delete ${place.title}`}
+                    variant="danger"
+                    style={styles.placeActionButton}
+                  />
                 </View>
               </View>
             );
@@ -549,6 +424,7 @@ export default function PlacesScreen({
         place={previewPlace}
         onClose={() => setPreviewPlace(null)}
         onEditPlace={onEditPlace}
+        onDeletePlace={onRemovePlace}
         activeRouteLink={activeRouteLink}
       />
     </>
@@ -560,22 +436,6 @@ const styles = StyleSheet.create({
     paddingTop: screen.topPadding,
     paddingBottom: screen.bottomSpacing,
     paddingHorizontal: spacing.xl,
-  },
-  topArea: {
-    marginBottom: 22,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: 36,
-    fontWeight: "800",
-    marginBottom: spacing.sm,
-    letterSpacing: 0.3,
-  },
-  subtitle: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 20,
-    maxWidth: 320,
   },
   segmentWrap: {
     flexDirection: "row",
@@ -604,108 +464,6 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: colors.textDark,
     fontWeight: "700",
-  },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-  searchBox: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 4,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 15,
-    height: 48,
-    marginLeft: 10,
-  },
-  searchClearButton: {
-    marginLeft: spacing.sm,
-  },
-  filterToggleButton: {
-    width: 54,
-    height: 54,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  filterToggleButtonActive: {
-    backgroundColor: colors.accent,
-    ...shadows.tabActive,
-  },
-  filterCountBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.accent,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  filterCountText: {
-    color: colors.textDark,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  filtersDropdown: {
-    backgroundColor: "#142B20",
-    borderRadius: radius.xxxl,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  filtersHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  filtersTitle: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  clearFiltersButton: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  clearFiltersText: {
-    color: colors.textDark,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  filterLabel: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    marginBottom: spacing.sm,
-  },
-  filtersRow: {
-    paddingRight: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  filterSummary: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
   },
   mapWrapLarge: {
     height: 390,
@@ -747,6 +505,12 @@ const styles = StyleSheet.create({
     padding: 18,
     marginRight: spacing.md,
     overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  mapPlaceMain: {
+    flex: 1,
+    minWidth: 0,
   },
   mapPlaceTitle: {
     color: colors.textPrimary,
@@ -765,77 +529,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   mapPlaceActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginTop: 14,
-  },
-  mapPlaceActionPrimary: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  mapPlaceActionGhost: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  mapPlaceActionDelete: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: "center",
+    alignSelf: "stretch",
     justifyContent: "center",
-    marginBottom: spacing.sm,
+    marginLeft: spacing.sm,
   },
-  mapPlaceActionTextDark: {
-    color: colors.textDark,
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 6,
-  },
-  mapPlaceActionTextLight: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 6,
-  },
-  emptyCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    padding: spacing.xl,
-    alignItems: "flex-start",
-  },
-  emptyIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: spacing.sm,
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+  mapActionButton: {
+    marginTop: spacing.sm,
   },
   placeListCard: {
     backgroundColor: colors.surface,
@@ -845,6 +544,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     overflow: "hidden",
+  },
+  placeListMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    minWidth: 0,
   },
   placeListImage: {
     width: 108,
@@ -892,85 +597,18 @@ const styles = StyleSheet.create({
   placeListPills: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 10,
+    marginBottom: 4,
   },
-  placeListPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  placePillItem: {
     marginRight: spacing.sm,
     marginBottom: 6,
-  },
-  placeListPillText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "600",
-  },
-  placeListLivePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: spacing.sm,
-    marginBottom: 6,
-  },
-  placeListLivePillText: {
-    color: colors.textDark,
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "700",
   },
   placeListActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginTop: 2,
-  },
-  placePrimaryAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  placePrimaryActionText: {
-    color: colors.textDark,
-    fontSize: 13,
-    fontWeight: "700",
-    marginLeft: 6,
-  },
-  placeSecondaryAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  placeSecondaryActionText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "600",
-    marginLeft: 6,
-  },
-  placeDeleteAction: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: "center",
+    alignSelf: "stretch",
     justifyContent: "center",
-    marginBottom: spacing.sm,
+    marginLeft: spacing.sm,
+  },
+  placeActionButton: {
+    marginTop: spacing.sm,
   },
 });

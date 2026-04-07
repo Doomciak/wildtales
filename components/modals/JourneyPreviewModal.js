@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -11,6 +12,12 @@ import MapView, { Polyline } from "react-native-maps";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import WildMarker from "../maps/WildMarker";
+import ImageGalleryModal from "./shared/ImageGalleryModal";
+import ModalActionRow from "./shared/ModalActionRow";
+import ModalCardShell from "./shared/ModalCardShell";
+import ModalHeader from "./shared/ModalHeader";
+import InfoPill from "../ui/InfoPill";
+import useImageGallery from "../../hooks/useImageGallery";
 import { colors } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 import {
@@ -26,7 +33,7 @@ export default function JourneyPreviewModal({
   onClose,
   onEditJourney,
   onDeleteJourney,
-  onSaveRouteAsPlace,
+  onAddJourneyPhotos,
 }) {
   const previewPoints = route?.routePoints || [];
   const previewFallbackPoint =
@@ -45,22 +52,112 @@ export default function JourneyPreviewModal({
   const lastPreviewPoint =
     previewPoints[previewPoints.length - 1] || previewFallbackPoint || null;
 
-  return (
-    <Modal visible={Boolean(route)} transparent animationType="fade">
-      <View style={styles.previewOverlay}>
-        <View style={styles.previewModal}>
-          <View style={styles.previewHeader}>
-            <Text style={styles.previewHeaderTitle}>Journey preview</Text>
+  const snapshotUri = route?.snapshotUri || null;
 
-            <Pressable style={styles.previewCloseButton} onPress={onClose}>
-              <Feather name="x" size={18} color={colors.textSecondary} />
-            </Pressable>
-          </View>
+  const journeyImages = useMemo(() => {
+    const rawImages = Array.isArray(route?.images) ? route.images : [];
+    const filtered = rawImages.filter(Boolean);
+
+    if (!snapshotUri) {
+      return [...new Set(filtered)];
+    }
+
+    return [...new Set(filtered.filter((uri) => uri !== snapshotUri))];
+  }, [route?.images, snapshotUri]);
+
+  const gallerySourceItems = useMemo(() => {
+    const items = [];
+
+    if (snapshotUri) {
+      items.push({
+        uri: snapshotUri,
+        type: "snapshot",
+        label: "Route snapshot",
+      });
+    }
+
+    journeyImages.forEach((uri) => {
+      items.push({
+        uri,
+        type: "photo",
+        label: "Journey photo",
+      });
+    });
+
+    return items;
+  }, [snapshotUri, journeyImages]);
+
+  const {
+    galleryItems,
+    galleryVisible,
+    previewImageIndex,
+    setPreviewImageIndex,
+    openGalleryAt,
+    closeGallery,
+    showPreviousItem,
+    showNextItem,
+  } = useImageGallery(gallerySourceItems, route?.id);
+
+  const photoGalleryStartIndex = snapshotUri ? 1 : 0;
+
+  const openJourneyPhotosGallery = () => {
+    if (journeyImages.length > 0) {
+      openGalleryAt(photoGalleryStartIndex);
+      return;
+    }
+
+    if (snapshotUri) {
+      openGalleryAt(0);
+    }
+  };
+
+  const closeAll = () => {
+    closeGallery();
+    onClose();
+  };
+
+  return (
+    <>
+      <Modal
+        visible={Boolean(route)}
+        transparent
+        animationType="fade"
+        onRequestClose={closeAll}
+      >
+        <ModalCardShell>
+          <ModalHeader
+            title="Journey preview"
+            onClose={closeAll}
+            closeLabel="Close journey preview"
+            titleStyle={styles.previewHeaderTitle}
+          />
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {previewPoints.length > 0 || previewFallbackPoint ? (
+            {snapshotUri ? (
+              <View style={styles.heroImageWrap}>
+                <Image source={{ uri: snapshotUri }} style={styles.heroImage} />
+
+                <View style={styles.heroBadge}>
+                  <Ionicons
+                    name="map-outline"
+                    size={14}
+                    color={colors.textDark}
+                  />
+                  <Text style={styles.heroBadgeText}>Route snapshot</Text>
+                </View>
+              </View>
+            ) : previewPoints.length > 0 || previewFallbackPoint ? (
               <View style={styles.journeyPreviewMapWrap}>
-                <MapView style={styles.map} initialRegion={previewRegion}>
+                <MapView
+                  key={route?.id || "journey-preview-map"}
+                  style={styles.map}
+                  initialRegion={previewRegion}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  pitchEnabled={false}
+                  rotateEnabled={false}
+                  toolbarEnabled={false}
+                >
                   {previewPoints.length > 0 ? (
                     <Polyline
                       coordinates={previewPoints}
@@ -87,6 +184,15 @@ export default function JourneyPreviewModal({
                     />
                   ) : null}
                 </MapView>
+
+                <View style={styles.heroBadge}>
+                  <Ionicons
+                    name="trail-sign-outline"
+                    size={14}
+                    color={colors.textDark}
+                  />
+                  <Text style={styles.heroBadgeText}>Live route preview</Text>
+                </View>
               </View>
             ) : (
               <View style={styles.previewMainFallback}>
@@ -114,140 +220,172 @@ export default function JourneyPreviewModal({
             ) : null}
 
             <View style={styles.journeyPreviewMetaRow}>
-              <View style={styles.journeyMetaPill}>
-                <Ionicons
-                  name="navigate-outline"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.journeyMetaPillText}>
-                  {formatDistanceKm(Number(route?.distanceKm || 0))}
-                </Text>
-              </View>
+              <InfoPill
+                icon="navigate-outline"
+                label={formatDistanceKm(Number(route?.distanceKm || 0))}
+                style={styles.metaPillItem}
+              />
 
-              <View style={styles.journeyMetaPill}>
-                <Feather
-                  name="clock"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.journeyMetaPillText}>
-                  {formatDuration(Number(route?.durationMinutes || 0))}
-                </Text>
-              </View>
-
-              {route?.linkedPlaceId ? (
-                <View style={styles.journeyLinkedPill}>
-                  <Ionicons
-                    name="bookmark"
-                    size={13}
-                    color={colors.textDark}
-                  />
-                  <Text style={styles.journeyLinkedPillText}>
-                    Saved as place
-                  </Text>
-                </View>
-              ) : null}
+              <InfoPill
+                icon="clock"
+                iconSet="feather"
+                label={formatDuration(Number(route?.durationMinutes || 0))}
+                style={styles.metaPillItem}
+              />
             </View>
 
             <Text style={styles.previewNote}>
               {route?.note || "Saved from your finished live route."}
             </Text>
+
+            <View style={styles.photosHeaderRow}>
+              <View style={styles.photosTitleGroup}>
+                <Text style={styles.photosTitle}>Journey photos</Text>
+
+                {(journeyImages.length > 0 || snapshotUri) && (
+                  <InfoPill
+                    icon="images-outline"
+                    variant="accent"
+                    label={`${journeyImages.length}`}
+                    onPress={openJourneyPhotosGallery}
+                    accessibilityLabel={`Open gallery with ${
+                      journeyImages.length
+                    } journey photo${journeyImages.length === 1 ? "" : "s"}`}
+                    style={styles.photosBadge}
+                  />
+                )}
+              </View>
+
+              <Pressable
+                style={styles.addPhotosButton}
+                onPress={() => onAddJourneyPhotos?.(route)}
+              >
+                <Ionicons
+                  name="images-outline"
+                  size={15}
+                  color={colors.textDark}
+                />
+                <Text style={styles.addPhotosButtonText}>Add photos</Text>
+              </Pressable>
+            </View>
+
+            {journeyImages.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photosRow}
+              >
+                {journeyImages.map((imageUri, index) => (
+                  <Pressable
+                    key={`${imageUri}-${index}`}
+                    onPress={() => openGalleryAt(photoGalleryStartIndex + index)}
+                    style={styles.photoThumbWrap}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open journey photo ${index + 1}`}
+                  >
+                    <Image source={{ uri: imageUri }} style={styles.photoThumb} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.photosEmptyCard}>
+                <Ionicons
+                  name="image-outline"
+                  size={18}
+                  color={colors.textMuted}
+                />
+                <Text style={styles.photosEmptyText}>
+                  No extra photos yet for this journey.
+                </Text>
+              </View>
+            )}
           </ScrollView>
 
-          <View style={styles.previewFooterStack}>
-            <View style={styles.previewFooter}>
-              <Pressable style={styles.previewButtonWide} onPress={onClose}>
-                <Text style={styles.previewButtonWideText}>Close</Text>
-              </Pressable>
+          <ModalActionRow
+            leftAction={{
+              label: "Edit journey",
+              onPress: () => {
+                const currentRoute = route;
+                closeAll();
+                onEditJourney(currentRoute);
+              },
+              iconName: "edit-2",
+              variant: "accent",
+              accessibilityLabel: "Edit journey",
+            }}
+            rightAction={{
+              label: "Delete",
+              onPress: () => {
+                const currentRoute = route;
+                closeAll();
+                onDeleteJourney(currentRoute.id);
+              },
+              iconName: "trash-2",
+              variant: "muted",
+              accessibilityLabel: "Delete journey",
+            }}
+          />
+        </ModalCardShell>
+      </Modal>
 
-              <Pressable
-                style={styles.editButtonWide}
-                onPress={() => {
-                  const currentRoute = route;
-                  onClose();
-                  onEditJourney(currentRoute);
-                }}
-              >
-                <Text style={styles.editButtonWideText}>Edit journey</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.previewFooter}>
-              {route?.linkedPlaceId ? (
-                <View style={styles.journeyPreviewLinkedButton}>
-                  <Text style={styles.journeyPreviewLinkedButtonText}>
-                    Already saved as place
-                  </Text>
-                </View>
-              ) : (
-                <Pressable
-                  style={styles.editButtonWide}
-                  onPress={() => {
-                    const currentRoute = route;
-                    onClose();
-                    onSaveRouteAsPlace(currentRoute);
-                  }}
-                >
-                  <Text style={styles.editButtonWideText}>Save as place</Text>
-                </Pressable>
-              )}
-
-              <Pressable
-                style={styles.dangerWideButton}
-                onPress={() => {
-                  const currentRoute = route;
-                  onClose();
-                  onDeleteJourney(currentRoute.id);
-                }}
-              >
-                <Text style={styles.dangerWideButtonText}>Delete</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </View>
-    </Modal>
+      <ImageGalleryModal
+        visible={galleryVisible}
+        onClose={closeGallery}
+        items={galleryItems}
+        index={previewImageIndex}
+        onChangeIndex={setPreviewImageIndex}
+        onPrevious={showPreviousItem}
+        onNext={showNextItem}
+        previousLabel="Previous image"
+        nextLabel="Next image"
+        selectLabelPrefix="Select image"
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: colors.overlayDark,
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  previewModal: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxxl + 2,
-    padding: 18,
-    maxHeight: "88%",
-  },
-  previewHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.lg - 2,
-  },
   previewHeaderTitle: {
-    color: colors.textPrimary,
     fontSize: 20,
     fontWeight: "700",
+    marginBottom: 0,
   },
-  previewCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  heroImageWrap: {
+    height: 260,
+    borderRadius: radius.xxl - 2,
+    overflow: "hidden",
+    marginBottom: spacing.lg - 2,
+    position: "relative",
     backgroundColor: colors.surfaceAlt,
-    justifyContent: "center",
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+  },
+  heroBadge: {
+    position: "absolute",
+    left: 12,
+    bottom: 12,
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: colors.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  heroBadgeText: {
+    color: colors.textDark,
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 6,
   },
   journeyPreviewMapWrap: {
     height: 260,
     borderRadius: radius.xxl - 2,
     overflow: "hidden",
     marginBottom: spacing.lg - 2,
+    position: "relative",
+    backgroundColor: colors.surfaceAlt,
   },
   map: {
     width: "100%",
@@ -286,103 +424,77 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 6,
   },
-  journeyMetaPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+  metaPillItem: {
     marginRight: spacing.sm,
     marginBottom: spacing.sm,
-  },
-  journeyMetaPillText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "600",
-  },
-  journeyLinkedPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  journeyLinkedPillText: {
-    color: colors.textDark,
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "700",
   },
   previewNote: {
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
     marginTop: 10,
+    marginBottom: spacing.md,
+  },
+  photosHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.sm,
     marginBottom: spacing.sm,
   },
-  previewFooterStack: {
-    marginTop: spacing.lg,
-  },
-  previewFooter: {
+  photosTitleGroup: {
     flexDirection: "row",
-    marginTop: 10,
-  },
-  previewButtonWide: {
-    flex: 1,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingVertical: 14,
     alignItems: "center",
-    marginRight: 6,
+    flexShrink: 1,
+    marginRight: spacing.sm,
   },
-  previewButtonWideText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
+  photosTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
   },
-  editButtonWide: {
-    flex: 1,
+  photosBadge: {
+    marginLeft: 10,
+  },
+  addPhotosButton: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: radius.pill,
-    paddingVertical: 14,
-    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  addPhotosButtonText: {
+    color: colors.textDark,
+    fontSize: 12,
+    fontWeight: "700",
     marginLeft: 6,
   },
-  editButtonWideText: {
-    color: colors.textDark,
-    fontSize: 14,
-    fontWeight: "700",
+  photosRow: {
+    paddingBottom: spacing.xs,
   },
-  journeyPreviewLinkedButton: {
-    flex: 1,
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.pill,
-    paddingVertical: 14,
+  photoThumbWrap: {
+    marginRight: spacing.sm,
+    borderRadius: radius.xl,
+    overflow: "hidden",
+  },
+  photoThumb: {
+    width: 108,
+    height: 108,
+    borderRadius: radius.xl,
+  },
+  photosEmptyCard: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.xl,
+    padding: 14,
+    flexDirection: "row",
     alignItems: "center",
-    marginRight: 6,
-    justifyContent: "center",
+    marginBottom: spacing.sm,
   },
-  journeyPreviewLinkedButtonText: {
-    color: colors.textDark,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  dangerWideButton: {
+  photosEmptyText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginLeft: 8,
     flex: 1,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.pill,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginLeft: 6,
-  },
-  dangerWideButtonText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "700",
   },
 });

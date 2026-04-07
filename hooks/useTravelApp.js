@@ -8,7 +8,6 @@ import {
   buildJourneyTitleFromTrip,
   formatDistanceKm,
   formatDuration,
-  formatJourneyDate,
   getDistanceKm,
   getPathDistanceKm,
   getRouteLocationLine,
@@ -20,13 +19,11 @@ import {
   getAllPlaces,
   getAllRoutes,
   getLocationLogsForTrip,
+  MANAGED_MEDIA_FOLDER_NAME,
   savePlaceToDb,
   saveRouteToDb,
   setupDatabase,
-  updateRouteLinkedPlace,
 } from "../db";
-
-const APP_IMAGE_FOLDER_NAME = "wildtales-images";
 
 function parseImages(imagesValue, legacyImage) {
   let parsedImages = [];
@@ -145,25 +142,9 @@ function buildRouteForUi(route) {
     ...route,
     images,
     coverImage: images[0] || null,
+    snapshotUri: route.snapshotUri || null,
     routePoints: parseRoutePoints(route.routePoints),
   };
-}
-
-function buildRoutePlaceNote(route, customNote) {
-  const intro = String(customNote || "").trim();
-  const locationLine = getRouteLocationLine(route);
-
-  const lines = [
-    intro || "Saved from a finished live route.",
-    "",
-    `Distance: ${formatDistanceKm(Number(route?.distanceKm || 0))}`,
-    `Duration: ${formatDuration(Number(route?.durationMinutes || 0))}`,
-    route?.startedAt ? `Started: ${formatJourneyDate(route.startedAt)}` : null,
-    route?.endedAt ? `Finished: ${formatJourneyDate(route.endedAt)}` : null,
-    locationLine ? `Route: ${locationLine}` : null,
-  ].filter(Boolean);
-
-  return lines.join("\n");
 }
 
 function buildActiveRouteLink(places, tripLogs) {
@@ -248,10 +229,13 @@ function buildCoordinateFallbackName(latitude, longitude) {
 }
 
 function getAppImageDirectory() {
-  const directory = new Directory(Paths.document, APP_IMAGE_FOLDER_NAME);
+  const directory = new Directory(Paths.document, MANAGED_MEDIA_FOLDER_NAME);
 
   if (!directory.exists) {
-    directory.create();
+    directory.create({
+      idempotent: true,
+      intermediates: true,
+    });
   }
 
   return directory;
@@ -263,7 +247,7 @@ function isManagedAppImageUri(uri) {
   }
 
   try {
-    const directory = new Directory(Paths.document, APP_IMAGE_FOLDER_NAME);
+    const directory = new Directory(Paths.document, MANAGED_MEDIA_FOLDER_NAME);
     return String(uri).startsWith(directory.uri);
   } catch {
     return false;
@@ -287,11 +271,11 @@ function getFileExtensionFromUri(uri) {
   return extension;
 }
 
-function buildManagedImageName(uri, index = 0) {
+function buildManagedImageName(uri, index = 0, prefix = "image") {
   const extension = getFileExtensionFromUri(uri);
   const timestamp = Date.now();
   const randomPart = Math.random().toString(36).slice(2, 8);
-  return `place-${timestamp}-${index}-${randomPart}${extension}`;
+  return `${prefix}-${timestamp}-${index}-${randomPart}${extension}`;
 }
 
 function deleteManagedFileQuietly(uri) {
@@ -310,10 +294,37 @@ function deleteManagedFileQuietly(uri) {
   }
 }
 
-async function persistDraftImages(imageUris = []) {
+function deleteManagedFilesQuietly(uris = []) {
+  [...new Set((uris || []).filter(Boolean))].forEach((uri) => {
+    deleteManagedFileQuietly(uri);
+  });
+}
+
+function getManagedPlaceMediaUris(place) {
+  const uiPlace = buildPlaceForUi(place);
+  return uiPlace.images.filter(isManagedAppImageUri);
+}
+
+function getManagedRouteMediaUris(route) {
+  const uiRoute = buildRouteForUi(route);
+  const mediaUris = [
+    ...(uiRoute.images || []).filter(isManagedAppImageUri),
+    uiRoute.snapshotUri,
+  ].filter(isManagedAppImageUri);
+
+  return [...new Set(mediaUris)];
+}
+
+function getRemovedManagedUris(previousUris = [], nextUris = []) {
+  const nextSet = new Set(nextUris.filter(isManagedAppImageUri));
+  return previousUris.filter((uri) => isManagedAppImageUri(uri) && !nextSet.has(uri));
+}
+
+async function persistDraftImages(imageUris = [], prefix = "place") {
   const uniqueUris = [...new Set((imageUris || []).filter(Boolean))];
   const directory = getAppImageDirectory();
   const copiedUris = [];
+  const newlyCopiedUris = [];
   const cache = new Map();
 
   for (let index = 0; index < uniqueUris.length; index += 1) {
@@ -330,7 +341,7 @@ async function persistDraftImages(imageUris = []) {
       continue;
     }
 
-    const fileName = buildManagedImageName(uri, index);
+    const fileName = buildManagedImageName(uri, index, prefix);
     const destinationFile = new File(directory, fileName);
     const sourceFile = new File(uri);
 
@@ -338,11 +349,40 @@ async function persistDraftImages(imageUris = []) {
 
     cache.set(uri, destinationFile.uri);
     copiedUris.push(destinationFile.uri);
+    newlyCopiedUris.push(destinationFile.uri);
   }
 
   return {
     stableUris: copiedUris,
-    newlyCopiedUris: copiedUris.filter((uri) => isManagedAppImageUri(uri)),
+    newlyCopiedUris,
+  };
+}
+
+async function persistSingleDraftFile(uri, prefix = "route-snapshot") {
+  if (!uri) {
+    return {
+      stableUri: null,
+      newlyCopiedUri: null,
+    };
+  }
+
+  if (isManagedAppImageUri(uri)) {
+    return {
+      stableUri: uri,
+      newlyCopiedUri: null,
+    };
+  }
+
+  const directory = getAppImageDirectory();
+  const fileName = buildManagedImageName(uri, 0, prefix);
+  const destinationFile = new File(directory, fileName);
+  const sourceFile = new File(uri);
+
+  sourceFile.copy(destinationFile);
+
+  return {
+    stableUri: destinationFile.uri,
+    newlyCopiedUri: destinationFile.uri,
   };
 }
 
@@ -509,11 +549,13 @@ export default function useTravelApp() {
     let newlyCopiedUris = [];
 
     try {
-      const persistedImages = await persistDraftImages(images);
+      const previousManagedUris = editingPlace
+        ? getManagedPlaceMediaUris(editingPlace)
+        : [];
+
+      const persistedImages = await persistDraftImages(images, "place");
       const stableImages = persistedImages.stableUris;
-      newlyCopiedUris = persistedImages.newlyCopiedUris.filter(
-        (uri) => !images.includes(uri)
-      );
+      newlyCopiedUris = persistedImages.newlyCopiedUris;
 
       await savePlaceToDb(
         {
@@ -530,6 +572,13 @@ export default function useTravelApp() {
         editingPlace?.id || null
       );
 
+      const removedManagedUris = getRemovedManagedUris(
+        previousManagedUris,
+        stableImages
+      );
+
+      deleteManagedFilesQuietly(removedManagedUris);
+
       clearForm();
       setActiveTab("places");
 
@@ -538,9 +587,7 @@ export default function useTravelApp() {
     } catch (error) {
       console.log("Save place error:", error);
 
-      newlyCopiedUris.forEach((uri) => {
-        deleteManagedFileQuietly(uri);
-      });
+      deleteManagedFilesQuietly(newlyCopiedUris);
 
       Alert.alert("Save failed", "We could not save this place.");
     }
@@ -554,7 +601,13 @@ export default function useTravelApp() {
         style: "destructive",
         onPress: async () => {
           try {
+            const placeToDelete = places.find((place) => place.id === id);
+            const managedUris = placeToDelete
+              ? getManagedPlaceMediaUris(placeToDelete)
+              : [];
+
             await deletePlaceFromDb(id);
+            deleteManagedFilesQuietly(managedUris);
 
             const [placeRows] = await Promise.all([loadPlaces(), loadRoutes()]);
             await loadActiveRouteLink(placeRows);
@@ -634,7 +687,14 @@ export default function useTravelApp() {
           style: "destructive",
           onPress: async () => {
             try {
+              const routeToDelete = routes.find((route) => route.id === id);
+              const managedUris = routeToDelete
+                ? getManagedRouteMediaUris(routeToDelete)
+                : [];
+
               await deleteRouteFromDb(id);
+              deleteManagedFilesQuietly(managedUris);
+
               await loadRoutes();
 
               if (editingRoute?.id === id) {
@@ -724,6 +784,111 @@ export default function useTravelApp() {
         style: "destructive",
         onPress: () => setImages([]),
       },
+    ]);
+  }
+
+  async function saveJourneyPhotoUris(route, newUris) {
+    if (!route || !newUris?.length) {
+      return;
+    }
+
+    let newlyCopiedUris = [];
+
+    try {
+      const mergedUris = [...new Set([...(route.images || []), ...newUris])];
+      const persistedImages = await persistDraftImages(
+        mergedUris,
+        "route-photo"
+      );
+
+      newlyCopiedUris = persistedImages.newlyCopiedUris;
+
+      await saveRouteToDb(
+        {
+          ...route,
+          snapshotUri: route.snapshotUri || null,
+          image: persistedImages.stableUris[0] || null,
+          images: persistedImages.stableUris,
+        },
+        route.id
+      );
+
+      await loadRoutes();
+    } catch (error) {
+      console.log("Save journey photos error:", error);
+
+      deleteManagedFilesQuietly(newlyCopiedUris);
+
+      Alert.alert("Photos error", "We could not save journey photos.");
+    }
+  }
+
+  async function pickJourneyPhotosFromLibrary(route) {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission needed",
+          "Please allow access to your photo library."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 10,
+      });
+
+      if (!result.canceled && result.assets?.length) {
+        const newUris = result.assets.map((asset) => asset.uri).filter(Boolean);
+        await saveJourneyPhotoUris(route, newUris);
+      }
+    } catch (error) {
+      console.log("Journey library picker error:", error);
+      Alert.alert("Photos error", "We could not open your photo library.");
+    }
+  }
+
+  async function takeJourneyPhoto(route) {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Please allow access to your camera.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        await saveJourneyPhotoUris(route, [result.assets[0].uri]);
+      }
+    } catch (error) {
+      console.log("Journey camera picker error:", error);
+      Alert.alert("Camera error", "We could not take a photo right now.");
+    }
+  }
+
+  function openJourneyPhotoOptions(route) {
+    if (!route) {
+      return;
+    }
+
+    Alert.alert("Journey photos", "Choose how you want to add photos.", [
+      { text: "Take photo", onPress: () => takeJourneyPhoto(route) },
+      {
+        text: "Choose from library",
+        onPress: () => pickJourneyPhotosFromLibrary(route),
+      },
+      { text: "Cancel", style: "cancel" },
     ]);
   }
 
@@ -843,6 +1008,8 @@ export default function useTravelApp() {
     setFinishedTripDraft({
       ...tripSummary,
       title: suggestedTitle,
+      snapshotUri: tripSummary.snapshotUri || null,
+      images: Array.isArray(tripSummary.images) ? tripSummary.images : [],
     });
     setFinishedTripTitle(suggestedTitle);
     setFinishedTripNote("");
@@ -862,6 +1029,8 @@ export default function useTravelApp() {
       return;
     }
 
+    let newSnapshotUri = null;
+
     try {
       setSavingTripChoice(true);
 
@@ -869,10 +1038,21 @@ export default function useTravelApp() {
         String(finishedTripTitle || "").trim() ||
         buildJourneyTitleFromTrip(finishedTripDraft);
 
+      const persistedSnapshot = await persistSingleDraftFile(
+        finishedTripDraft.snapshotUri,
+        "route-snapshot"
+      );
+
+      newSnapshotUri = persistedSnapshot.newlyCopiedUri;
+
       await saveRouteToDb({
         ...finishedTripDraft,
+        snapshotUri: persistedSnapshot.stableUri,
         title: routeTitle,
         note: String(finishedTripNote || "").trim() || null,
+        images: Array.isArray(finishedTripDraft.images)
+          ? finishedTripDraft.images
+          : [],
       });
 
       await loadRoutes();
@@ -880,103 +1060,13 @@ export default function useTravelApp() {
       setActiveTab("journeys");
     } catch (error) {
       console.log("Save finished trip as journey error:", error);
+
+      if (newSnapshotUri) {
+        deleteManagedFileQuietly(newSnapshotUri);
+      }
+
       Alert.alert("Save failed", "We could not save this journey.");
       setSavingTripChoice(false);
-    }
-  }
-
-  async function saveFinishedTripAsPlace() {
-    if (!finishedTripDraft || savingTripChoice) {
-      return;
-    }
-
-    try {
-      setSavingTripChoice(true);
-
-      const routeTitle =
-        String(finishedTripTitle || "").trim() ||
-        buildJourneyTitleFromTrip(finishedTripDraft);
-
-      const placeLocationName =
-        finishedTripDraft.endPlaceName ||
-        finishedTripDraft.startPlaceName ||
-        "Tracked journey";
-
-      const locationDetails = getPlaceDetails({
-        placeName: placeLocationName,
-      });
-
-      const placeId = await savePlaceToDb({
-        title: routeTitle,
-        placeName: placeLocationName,
-        note: buildRoutePlaceNote(
-          {
-            ...finishedTripDraft,
-            title: routeTitle,
-          },
-          finishedTripNote
-        ),
-        image: null,
-        images: [],
-        latitude: finishedTripDraft.endLatitude ?? null,
-        longitude: finishedTripDraft.endLongitude ?? null,
-        city: locationDetails.city || null,
-        country: locationDetails.country || null,
-      });
-
-      await saveRouteToDb({
-        ...finishedTripDraft,
-        title: routeTitle,
-        note: String(finishedTripNote || "").trim() || null,
-        linkedPlaceId: placeId,
-      });
-
-      const [placeRows] = await Promise.all([loadPlaces(), loadRoutes()]);
-      await loadActiveRouteLink(placeRows);
-
-      closeFinishedTripModal();
-      setActiveTab("places");
-    } catch (error) {
-      console.log("Save finished trip as place error:", error);
-      Alert.alert("Save failed", "We could not save this route as a place.");
-      setSavingTripChoice(false);
-    }
-  }
-
-  async function saveExistingRouteAsPlace(route) {
-    if (!route || route.linkedPlaceId) {
-      return;
-    }
-
-    try {
-      const placeLocationName =
-        route.endPlaceName || route.startPlaceName || "Tracked journey";
-
-      const locationDetails = getPlaceDetails({
-        placeName: placeLocationName,
-      });
-
-      const placeId = await savePlaceToDb({
-        title: route.title || buildJourneyTitleFromTrip(route),
-        placeName: placeLocationName,
-        note: buildRoutePlaceNote(route, route.note),
-        image: null,
-        images: [],
-        latitude: route.endLatitude ?? null,
-        longitude: route.endLongitude ?? null,
-        city: locationDetails.city || null,
-        country: locationDetails.country || null,
-      });
-
-      await updateRouteLinkedPlace(route.id, placeId);
-
-      const [placeRows] = await Promise.all([loadPlaces(), loadRoutes()]);
-      await loadActiveRouteLink(placeRows);
-
-      Alert.alert("Saved", "This journey is now also saved as a place.");
-    } catch (error) {
-      console.log("Save existing route as place error:", error);
-      Alert.alert("Save failed", "We could not save this journey as a place.");
     }
   }
 
@@ -1059,6 +1149,7 @@ export default function useTravelApp() {
   }, [routes]);
 
   const latestRoute = routesSorted[0] || null;
+  const recentRoutes = routesSorted.slice(0, 3);
 
   const hasActiveFilters =
     selectedCountry !== "All" ||
@@ -1107,6 +1198,7 @@ export default function useTravelApp() {
     mapPlaces,
     routes,
     routesSorted,
+    recentRoutes,
     latestRoute,
     activeRouteLink,
 
@@ -1144,12 +1236,11 @@ export default function useTravelApp() {
     startEditingJourney,
     closeRouteEditing,
     saveRouteChanges,
+    openJourneyPhotoOptions,
 
     handleTripFinished,
     closeFinishedTripModal,
     saveFinishedTripAsJourney,
-    saveFinishedTripAsPlace,
-    saveExistingRouteAsPlace,
 
     clearForm,
   };

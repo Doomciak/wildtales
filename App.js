@@ -1,6 +1,16 @@
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import HomeScreen from "./features/home/HomeScreen";
 import WelcomeScreen from "./features/home/WelcomeScreen";
@@ -14,7 +24,28 @@ import useTravelApp from "./hooks/useTravelApp";
 import { colors, shadows } from "./constants/theme";
 import { radius, screen } from "./constants/layout";
 
-export default function App() {
+function TabButton({ label, icon, isActive, onPress }) {
+  return (
+    <Pressable
+      style={[styles.tabButton, isActive && styles.tabButtonActive]}
+      onPress={onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={19}
+        color={isActive ? colors.textDark : "#D3DED7"}
+        style={styles.tabIcon}
+      />
+      <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function AppContent() {
+  const insets = useSafeAreaInsets();
+
   const {
     showWelcome,
     setShowWelcome,
@@ -44,7 +75,7 @@ export default function App() {
     filteredPlaces,
     mapPlaces,
     routes,
-    routesSorted,
+    recentRoutes,
     latestRoute,
     activeRouteLink,
 
@@ -59,7 +90,6 @@ export default function App() {
     setSelectedCity,
 
     saveTripModalVisible,
-    finishedTripDraft,
     finishedTripTitle,
     setFinishedTripTitle,
     finishedTripNote,
@@ -82,15 +112,19 @@ export default function App() {
     startEditingJourney,
     closeRouteEditing,
     saveRouteChanges,
+    openJourneyPhotoOptions,
 
     handleTripFinished,
     closeFinishedTripModal,
     saveFinishedTripAsJourney,
-    saveFinishedTripAsPlace,
-    saveExistingRouteAsPlace,
 
     clearForm,
   } = useTravelApp();
+
+  const safeBottomInset = insets.bottom;
+  const tabBarBottomOffset = Math.max(safeBottomInset, 8) + 8;
+  const contentBottomPadding =
+    Math.max(safeBottomInset, 8) + screen.tabBarMinHeight + 10;
 
   if (loading) {
     return (
@@ -110,11 +144,12 @@ export default function App() {
     <View style={styles.screen}>
       <StatusBar style="light" />
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: contentBottomPadding }]}>
         {activeTab === "home" ? (
           <HomeScreen
             featuredPlace={placesWithDetails[0] || null}
             recentPlaces={placesWithDetails.slice(0, 3)}
+            recentRoutes={recentRoutes}
             totalPlaces={placesWithDetails.length}
             totalRoutes={routes.length}
             activeRouteLink={activeRouteLink}
@@ -127,8 +162,9 @@ export default function App() {
             }}
             onEditPlace={startEditing}
             onEditRoute={startEditingJourney}
+            onRemovePlace={removePlace}
             onRemoveRoute={removeRoute}
-            onSaveRouteAsPlace={saveExistingRouteAsPlace}
+            onAddJourneyPhotos={openJourneyPhotoOptions}
           />
         ) : activeTab === "places" ? (
           <PlacesScreen
@@ -160,10 +196,10 @@ export default function App() {
           <SafetyScreen onTripFinished={handleTripFinished} />
         ) : activeTab === "journeys" ? (
           <JourneysScreen
-            routes={routesSorted}
+            routes={routes}
             onRemoveRoute={removeRoute}
-            onSaveRouteAsPlace={saveExistingRouteAsPlace}
             onEditRoute={startEditingJourney}
+            onAddJourneyPhotos={openJourneyPhotoOptions}
           />
         ) : (
           <AddPlaceScreen
@@ -187,130 +223,72 @@ export default function App() {
         )}
       </View>
 
-      <View style={styles.tabBar}>
-        <Pressable
-          style={[styles.tabButton, activeTab === "home" && styles.tabActive]}
-          onPress={() => setActiveTab("home")}
-        >
-          <Ionicons
-            name="home-outline"
-            size={20}
-            color={activeTab === "home" ? colors.textDark : "#D3DED7"}
-            style={styles.tabIcon}
+      <View
+        style={[
+          styles.tabBarWrap,
+          {
+            left: screen.tabBarSideInset,
+            right: screen.tabBarSideInset,
+            bottom: tabBarBottomOffset,
+          },
+        ]}
+        pointerEvents="box-none"
+      >
+        <View style={styles.tabBar}>
+          <TabButton
+            label="Home"
+            icon="home-outline"
+            isActive={activeTab === "home"}
+            onPress={() => setActiveTab("home")}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "home" && styles.tabLabelActive,
-            ]}
-          >
-            Home
-          </Text>
-        </Pressable>
 
-        <Pressable
-          style={[styles.tabButton, activeTab === "places" && styles.tabActive]}
-          onPress={() => setActiveTab("places")}
-        >
-          <Ionicons
-            name="images-outline"
-            size={20}
-            color={activeTab === "places" ? colors.textDark : "#D3DED7"}
-            style={styles.tabIcon}
+          <TabButton
+            label="Places"
+            icon="images-outline"
+            isActive={activeTab === "places"}
+            onPress={() => setActiveTab("places")}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "places" && styles.tabLabelActive,
-            ]}
-          >
-            Places
-          </Text>
-        </Pressable>
 
-        <Pressable
-          style={[styles.tabButton, activeTab === "safety" && styles.tabActive]}
-          onPress={() => setActiveTab("safety")}
-        >
-          <Ionicons
-            name="shield-checkmark-outline"
-            size={20}
-            color={activeTab === "safety" ? colors.textDark : "#D3DED7"}
-            style={styles.tabIcon}
+          <TabButton
+            label="Safety"
+            icon="shield-checkmark-outline"
+            isActive={activeTab === "safety"}
+            onPress={() => setActiveTab("safety")}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "safety" && styles.tabLabelActive,
-            ]}
-          >
-            Safety
-          </Text>
-        </Pressable>
 
-        <Pressable
-          style={[
-            styles.tabButton,
-            activeTab === "journeys" && styles.tabActive,
-          ]}
-          onPress={() => setActiveTab("journeys")}
-        >
-          <Ionicons
-            name="trail-sign-outline"
-            size={20}
-            color={activeTab === "journeys" ? colors.textDark : "#D3DED7"}
-            style={styles.tabIcon}
+          <TabButton
+            label="Routes"
+            icon="trail-sign-outline"
+            isActive={activeTab === "journeys"}
+            onPress={() => setActiveTab("journeys")}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "journeys" && styles.tabLabelActive,
-            ]}
-          >
-            Routes
-          </Text>
-        </Pressable>
 
-        <Pressable
-          style={[styles.tabButton, activeTab === "add" && styles.tabActive]}
-          onPress={() => {
-            if (activeTab !== "add") {
-              clearForm();
-            }
-            setActiveTab("add");
-          }}
-        >
-          <Ionicons
-            name="add-circle-outline"
-            size={20}
-            color={activeTab === "add" ? colors.textDark : "#D3DED7"}
-            style={styles.tabIcon}
+          <TabButton
+            label="Add"
+            icon="add-circle-outline"
+            isActive={activeTab === "add"}
+            onPress={() => {
+              if (activeTab !== "add") {
+                clearForm();
+              }
+              setActiveTab("add");
+            }}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "add" && styles.tabLabelActive,
-            ]}
-          >
-            Add
-          </Text>
-        </Pressable>
+        </View>
       </View>
 
       <SaveTripModal
         visible={saveTripModalVisible}
-        savingTripChoice={savingTripChoice}
-        finishedTripDraft={finishedTripDraft}
-        finishedTripTitle={finishedTripTitle}
-        setFinishedTripTitle={setFinishedTripTitle}
-        finishedTripNote={finishedTripNote}
-        setFinishedTripNote={setFinishedTripNote}
-        finishedTripDistanceText={finishedTripDistanceText}
-        finishedTripDurationText={finishedTripDurationText}
-        finishedTripLocationLine={finishedTripLocationLine}
+        saving={savingTripChoice}
+        tripTitle={finishedTripTitle}
+        setTripTitle={setFinishedTripTitle}
+        tripNote={finishedTripNote}
+        setTripNote={setFinishedTripNote}
+        distanceText={finishedTripDistanceText}
+        durationText={finishedTripDurationText}
+        locationLine={finishedTripLocationLine}
         onClose={closeFinishedTripModal}
-        onSaveAsJourney={saveFinishedTripAsJourney}
-        onSaveAsPlace={saveFinishedTripAsPlace}
+        onSaveJourney={saveFinishedTripAsJourney}
       />
 
       <EditJourneyModal
@@ -324,6 +302,14 @@ export default function App() {
         onSaveChanges={saveRouteChanges}
       />
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
   );
 }
 
@@ -347,30 +333,34 @@ const styles = StyleSheet.create({
     marginTop: 14,
     fontSize: 16,
   },
+  tabBarWrap: {
+    position: "absolute",
+  },
   tabBar: {
     flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: screen.tabBarBottomPadding,
-    minHeight: screen.tabBarMinHeight,
-    backgroundColor: colors.surfaceOverlay,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderTab,
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: "rgba(8, 26, 18, 0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(214, 232, 219, 0.08)",
+    borderRadius: radius.xxl,
+    ...shadows.tabActive,
   },
   tabButton: {
     flex: 1,
-    borderRadius: radius.xl,
-    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: 3,
+    borderRadius: radius.xl,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minHeight: 52,
   },
-  tabActive: {
+  tabButtonActive: {
     backgroundColor: colors.accent,
-    ...shadows.tabActive,
   },
   tabIcon: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   tabLabel: {
     color: "#D3DED7",

@@ -12,6 +12,8 @@ import * as Network from "expo-network";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import WildMarker from "../../components/maps/WildMarker";
+import InfoPill from "../../components/ui/InfoPill";
+import ScreenHeader from "../../components/ui/ScreenHeader";
 import { colors } from "../../constants/theme";
 import { radius, screen, spacing } from "../../constants/layout";
 import {
@@ -35,12 +37,14 @@ export default function SafetyScreen({ onTripFinished }) {
     latestPlaceName,
     visibleLogs,
     latestRoutePoint,
+    smsFallbackTestActive,
 
     chooseContact,
     startTrip,
     stopTrip,
     retryPendingUploads,
     sendLatestLocationSms,
+    triggerSmsFallbackTest,
     getShortStatus,
     getStatusIcon,
   } = useSafetyTrip({ onTripFinished });
@@ -66,19 +70,34 @@ export default function SafetyScreen({ onTripFinished }) {
   }, [liveRegion]);
 
   const canRenderMap =
-    !isOffline && routeCoords.length > 0 && latestRoutePoint && hasValidRegion;
+    routeCoords.length > 0 && latestRoutePoint && hasValidRegion;
+
+  const hasRouteLine = routeCoords.length > 1;
 
   useEffect(() => {
-    if (!canRenderMap || !mapRef.current || !mapReady || !liveRegion) {
+    if (!canRenderMap || !mapRef.current || !mapReady) {
       return;
     }
 
     const frameId = requestAnimationFrame(() => {
-      mapRef.current?.animateToRegion(liveRegion, 500);
+      if (routeCoords.length > 1) {
+        mapRef.current?.fitToCoordinates(routeCoords, {
+          edgePadding: {
+            top: 60,
+            right: 60,
+            bottom: 60,
+            left: 60,
+          },
+          animated: true,
+        });
+        return;
+      }
+
+      mapRef.current?.animateToRegion(liveRegion, 400);
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [canRenderMap, liveRegion, mapReady]);
+  }, [canRenderMap, routeCoords, mapReady, tripId, liveRegion]);
 
   useEffect(() => {
     if (!canRenderMap) {
@@ -86,17 +105,36 @@ export default function SafetyScreen({ onTripFinished }) {
     }
   }, [canRenderMap]);
 
+  async function handleStopTripPress() {
+    let snapshotUri = null;
+
+    try {
+      if (canRenderMap && mapReady && mapRef.current?.takeSnapshot) {
+        snapshotUri = await mapRef.current.takeSnapshot({
+          width: 1200,
+          height: 800,
+          format: "png",
+          quality: 1,
+          result: "file",
+        });
+      }
+    } catch (error) {
+      console.log("Route snapshot error:", error);
+    }
+
+    await stopTrip({ snapshotUri });
+  }
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
     >
-      <View style={styles.topArea}>
-        <Text style={styles.title}>Safety</Text>
-        <Text style={styles.subtitle}>
-          Track your trip, keep route updates, and send help faster if needed.
-        </Text>
-      </View>
+      <ScreenHeader
+        title="Safety"
+        subtitle="Track your trip, keep route updates, and send help faster if needed."
+        maxWidth={300}
+      />
 
       <View style={styles.card}>
         <View style={styles.cardTitleRow}>
@@ -180,8 +218,8 @@ export default function SafetyScreen({ onTripFinished }) {
               style={styles.statusIcon}
             />
             <Text style={styles.offlineInfoText}>
-              You are offline. Trip logs can still be saved on this device, but
-              the live map preview will stay hidden until connection returns.
+              Signal is weak or offline right now. Route points still save on
+              this device and online updates will retry when connection returns.
             </Text>
           </View>
         ) : null}
@@ -206,7 +244,7 @@ export default function SafetyScreen({ onTripFinished }) {
               styles.secondaryButtonSmall,
               !tripActive && styles.disabledButtonDark,
             ]}
-            onPress={stopTrip}
+            onPress={handleStopTripPress}
             disabled={!tripActive}
           >
             <View style={styles.buttonContent}>
@@ -242,11 +280,13 @@ export default function SafetyScreen({ onTripFinished }) {
                 initialRegion={liveRegion}
                 onMapReady={() => setMapReady(true)}
               >
-                <Polyline
-                  coordinates={routeCoords}
-                  strokeColor={ROUTE_LINE_COLOR}
-                  strokeWidth={4}
-                />
+                {hasRouteLine ? (
+                  <Polyline
+                    coordinates={routeCoords}
+                    strokeColor={ROUTE_LINE_COLOR}
+                    strokeWidth={4}
+                  />
+                ) : null}
 
                 {latestRoutePoint ? (
                   <WildMarker
@@ -259,89 +299,81 @@ export default function SafetyScreen({ onTripFinished }) {
               </MapView>
             </View>
 
+            {isOffline ? (
+              <View style={styles.offlineInfoBox}>
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={14}
+                  color={colors.textSecondary}
+                  style={styles.statusIcon}
+                />
+                <Text style={styles.offlineInfoText}>
+                  The route is still being recorded. If map tiles do not load,
+                  your line and latest point will appear properly again when
+                  signal returns.
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.statsRow}>
-              <View style={styles.statPillWide}>
-                <Ionicons
-                  name="location-outline"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statPillText} numberOfLines={1}>
-                  {latestPlaceName}
-                </Text>
-              </View>
+              <InfoPill
+                icon="location-outline"
+                label={latestPlaceName}
+                fullWidth
+                numberOfLines={1}
+                style={styles.statPillWide}
+              />
 
-              <View style={styles.statPill}>
-                <Ionicons
-                  name="navigate-outline"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statPillText}>
-                  {formatDistanceKm(routeDistanceKm)}
-                </Text>
-              </View>
+              <InfoPill
+                icon="navigate-outline"
+                label={formatDistanceKm(routeDistanceKm)}
+                style={styles.statPillItem}
+              />
 
-              <View style={styles.statPill}>
-                <Feather
-                  name="clock"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statPillText}>
-                  {formatDuration(routeDurationMinutes)}
-                </Text>
-              </View>
+              <InfoPill
+                icon="clock"
+                iconSet="feather"
+                label={formatDuration(routeDurationMinutes)}
+                style={styles.statPillItem}
+              />
             </View>
           </>
         ) : (
           <>
             <View style={styles.offlineMapCard}>
               <Ionicons
-                name="cloud-offline-outline"
+                name="locate-outline"
                 size={18}
                 color={colors.textMuted}
               />
-              <Text style={styles.offlineMapTitle}>Map unavailable offline</Text>
+              <Text style={styles.offlineMapTitle}>Preparing live route</Text>
               <Text style={styles.offlineMapText}>
-                This feature does not work offline right now. Your route stats,
-                latest location, and saved logs still work on this device.
+                The app has route data, but the map is still getting ready.
+                Keep walking for a few seconds and it should appear.
               </Text>
             </View>
 
             <View style={styles.statsRow}>
-              <View style={styles.statPillWide}>
-                <Ionicons
-                  name="location-outline"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statPillText} numberOfLines={1}>
-                  {latestPlaceName}
-                </Text>
-              </View>
+              <InfoPill
+                icon="location-outline"
+                label={latestPlaceName}
+                fullWidth
+                numberOfLines={1}
+                style={styles.statPillWide}
+              />
 
-              <View style={styles.statPill}>
-                <Ionicons
-                  name="navigate-outline"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statPillText}>
-                  {formatDistanceKm(routeDistanceKm)}
-                </Text>
-              </View>
+              <InfoPill
+                icon="navigate-outline"
+                label={formatDistanceKm(routeDistanceKm)}
+                style={styles.statPillItem}
+              />
 
-              <View style={styles.statPill}>
-                <Feather
-                  name="clock"
-                  size={13}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statPillText}>
-                  {formatDuration(routeDurationMinutes)}
-                </Text>
-              </View>
+              <InfoPill
+                icon="clock"
+                iconSet="feather"
+                label={formatDuration(routeDurationMinutes)}
+                style={styles.statPillItem}
+              />
             </View>
           </>
         )}
@@ -358,15 +390,20 @@ export default function SafetyScreen({ onTripFinished }) {
         </View>
 
         <Text style={styles.subText}>
-          The app first tries to send your location online. If that still does
-          not work after 3 failed tries or about 5 minutes, it opens a text
-          update with your latest saved location.
+          Real fallback stays the same: the app first tries online sending, and
+          if that still does not work after 3 failed tries or about 5 minutes,
+          it opens a text update with your latest saved location.
         </Text>
 
-        <View style={styles.row}>
+        <Text style={styles.subText}>
+          The test button below uses a short 20 second timer only for testing,
+          so you do not need to wait 5 minutes every time.
+        </Text>
+
+        <View style={styles.updatesButtonsColumn}>
           <Pressable
             style={[
-              styles.primaryButtonSmall,
+              styles.primaryButtonFull,
               retryingUploads && styles.disabledButton,
             ]}
             onPress={retryPendingUploads}
@@ -389,7 +426,29 @@ export default function SafetyScreen({ onTripFinished }) {
           </Pressable>
 
           <Pressable
-            style={styles.secondaryButtonSmall}
+            style={[
+              styles.secondaryButtonFull,
+              smsFallbackTestActive && styles.disabledButtonDark,
+            ]}
+            onPress={triggerSmsFallbackTest}
+            disabled={smsFallbackTestActive}
+          >
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="beaker-outline"
+                size={16}
+                color={colors.textSecondary}
+              />
+              <Text style={styles.secondaryButtonText}>
+                {smsFallbackTestActive
+                  ? "Fallback test running..."
+                  : "Run fallback test"}
+              </Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            style={styles.secondaryButtonFull}
             onPress={sendLatestLocationSms}
           >
             <View style={styles.buttonContent}>
@@ -479,22 +538,6 @@ const styles = StyleSheet.create({
     paddingBottom: screen.bottomSpacing,
     paddingHorizontal: spacing.xl,
   },
-  topArea: {
-    marginBottom: 22,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: 36,
-    fontWeight: "800",
-    marginBottom: spacing.sm,
-    letterSpacing: 0.3,
-  },
-  subtitle: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 20,
-    maxWidth: 300,
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.xxxl,
@@ -569,6 +612,16 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: "center",
   },
+  primaryButtonFull: {
+    width: "100%",
+    backgroundColor: colors.accent,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   primaryButtonText: {
     color: colors.textDark,
     fontSize: 14,
@@ -585,11 +638,25 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: "center",
   },
+  secondaryButtonFull: {
+    width: "100%",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   secondaryButtonText: {
     color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
     marginLeft: spacing.sm,
+  },
+  updatesButtonsColumn: {
+    marginTop: spacing.sm,
+    gap: 10,
   },
   disabledButton: {
     opacity: 0.55,
@@ -685,30 +752,11 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   statPillWide: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: radius.pill,
     marginBottom: spacing.sm,
   },
-  statPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: radius.pill,
+  statPillItem: {
     marginRight: spacing.sm,
     marginBottom: spacing.xs,
-  },
-  statPillText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginLeft: 6,
-    flexShrink: 1,
   },
   updatesMessageBox: {
     flexDirection: "row",

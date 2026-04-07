@@ -1,12 +1,41 @@
 import * as SQLite from "expo-sqlite";
-import { File } from "expo-file-system";
+import { Directory, File, Paths } from "expo-file-system";
 
 const DATABASE_NAME = "wildtales.db";
+export const MANAGED_MEDIA_FOLDER_NAME = "wildtales-media";
 
 export const dbPromise = SQLite.openDatabaseAsync(DATABASE_NAME);
 
+const managedMediaDirectory = new Directory(
+  Paths.document,
+  MANAGED_MEDIA_FOLDER_NAME
+);
+
 function nowIso() {
   return new Date().toISOString();
+}
+
+function safeJsonStringArray(value) {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .filter((item) => typeof item === "string" && item.trim())
+      .map((item) => item.trim());
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed
+          .filter((item) => typeof item === "string" && item.trim())
+          .map((item) => item.trim())
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 function safeJsonArray(value) {
@@ -14,11 +43,13 @@ function safeJsonArray(value) {
     return [];
   }
 
+  if (Array.isArray(value)) {
+    return value;
+  }
+
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => typeof item === "string" && item.trim())
-      : [];
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -28,13 +59,22 @@ function uniqueStrings(values) {
   return [...new Set(values.filter(Boolean).map((value) => String(value).trim()))];
 }
 
+function isLocalFileUri(uri) {
+  return typeof uri === "string" && uri.startsWith("file://");
+}
+
+function isManagedMediaUri(uri) {
+  return isLocalFileUri(uri) && uri.startsWith(managedMediaDirectory.uri);
+}
+
 function normaliseIncomingImages(images, image) {
-  const arrayImages = Array.isArray(images) ? images : safeJsonArray(images);
+  const arrayImages = Array.isArray(images) ? images : safeJsonStringArray(images);
   return uniqueStrings([image, ...arrayImages]);
 }
 
 function buildImageFields(data = {}) {
   const imageUris = normaliseIncomingImages(data.images, data.image);
+
   return {
     image: imageUris[0] || null,
     imagesJson: JSON.stringify(imageUris),
@@ -42,12 +82,24 @@ function buildImageFields(data = {}) {
   };
 }
 
-function getRowImageUris(row) {
+function getPlaceFileUris(row) {
   if (!row) {
     return [];
   }
 
-  return uniqueStrings([row.image, ...safeJsonArray(row.images)]);
+  return uniqueStrings([row.image, ...safeJsonStringArray(row.images)]);
+}
+
+function getRouteFileUris(row) {
+  if (!row) {
+    return [];
+  }
+
+  return uniqueStrings([
+    row.snapshotUri,
+    row.image,
+    ...safeJsonStringArray(row.images),
+  ]);
 }
 
 function serialisePlaceRow(row) {
@@ -61,7 +113,7 @@ function serialisePlaceRow(row) {
     placeName: row.placeName,
     note: row.note,
     image: row.image,
-    images: safeJsonArray(row.images),
+    images: safeJsonStringArray(row.images),
     latitude: row.latitude,
     longitude: row.longitude,
     city: row.city,
@@ -82,7 +134,8 @@ function serialiseRouteRow(row) {
     title: row.title,
     note: row.note,
     image: row.image,
-    images: safeJsonArray(row.images),
+    images: safeJsonStringArray(row.images),
+    snapshotUri: row.snapshotUri || null,
     startPlaceName: row.startPlaceName,
     endPlaceName: row.endPlaceName,
     startLatitude: row.startLatitude,
@@ -119,8 +172,19 @@ async function ensureColumns(db, tableName, columns) {
   }
 }
 
+async function ensureManagedMediaDirectory() {
+  if (!managedMediaDirectory.exists) {
+    managedMediaDirectory.create({
+      idempotent: true,
+      intermediates: true,
+    });
+  }
+
+  return managedMediaDirectory;
+}
+
 async function deleteLocalFile(uri) {
-  if (!uri || !uri.startsWith("file://")) {
+  if (!isLocalFileUri(uri)) {
     return;
   }
 
@@ -135,7 +199,7 @@ async function deleteLocalFile(uri) {
   }
 }
 
-async function isImageStillReferenced(db, uri, ignoredRecords = []) {
+async function isFileStillReferenced(db, uri, ignoredRecords = []) {
   if (!uri) {
     return false;
   }
@@ -144,22 +208,20 @@ async function isImageStillReferenced(db, uri, ignoredRecords = []) {
     ignoredRecords.map((item) => `${item.table}:${item.id}`)
   );
 
-  const placeRows = await db.getAllAsync(
-    "SELECT id, image, images FROM places"
-  );
+  const placeRows = await db.getAllAsync("SELECT id, image, images FROM places");
 
   for (const row of placeRows) {
     if (ignoredSet.has(`places:${row.id}`)) {
       continue;
     }
 
-    if (getRowImageUris(row).includes(uri)) {
+    if (getPlaceFileUris(row).includes(uri)) {
       return true;
     }
   }
 
   const routeRows = await db.getAllAsync(
-    "SELECT id, image, images FROM routes"
+    "SELECT id, image, images, snapshotUri FROM routes"
   );
 
   for (const row of routeRows) {
@@ -167,7 +229,7 @@ async function isImageStillReferenced(db, uri, ignoredRecords = []) {
       continue;
     }
 
-    if (getRowImageUris(row).includes(uri)) {
+    if (getRouteFileUris(row).includes(uri)) {
       return true;
     }
   }
@@ -175,11 +237,15 @@ async function isImageStillReferenced(db, uri, ignoredRecords = []) {
   return false;
 }
 
-async function deleteUnusedImageUris(uris, ignoredRecords = []) {
+async function deleteUnusedManagedUris(uris, ignoredRecords = []) {
   const db = await dbPromise;
 
   for (const uri of uniqueStrings(uris)) {
-    const stillReferenced = await isImageStillReferenced(db, uri, ignoredRecords);
+    if (!isManagedMediaUri(uri)) {
+      continue;
+    }
+
+    const stillReferenced = await isFileStillReferenced(db, uri, ignoredRecords);
 
     if (!stillReferenced) {
       await deleteLocalFile(uri);
@@ -217,6 +283,118 @@ async function createPendingSyncEntry({
   );
 
   return result.lastInsertRowId;
+}
+
+async function listManagedMediaFilesRecursive(directory = managedMediaDirectory) {
+  if (!directory.exists) {
+    return [];
+  }
+
+  const items = directory.list();
+  const uris = [];
+
+  for (const item of items) {
+    if (item instanceof Directory) {
+      const nestedUris = await listManagedMediaFilesRecursive(item);
+      uris.push(...nestedUris);
+      continue;
+    }
+
+    if (item instanceof File) {
+      uris.push(item.uri);
+    }
+  }
+
+  return uniqueStrings(uris);
+}
+
+export function getManagedMediaDirectoryUri() {
+  return managedMediaDirectory.uri;
+}
+
+export async function getImageStorageAudit() {
+  await ensureManagedMediaDirectory();
+  const db = await dbPromise;
+
+  const placeRows = await db.getAllAsync("SELECT id, image, images FROM places");
+  const routeRows = await db.getAllAsync(
+    "SELECT id, image, images, snapshotUri FROM routes"
+  );
+
+  const placeReferences = placeRows.flatMap((row) =>
+    getPlaceFileUris(row)
+      .filter(isLocalFileUri)
+      .map((uri) => ({
+        table: "places",
+        id: row.id,
+        uri,
+        managed: isManagedMediaUri(uri),
+        exists: new File(uri).exists,
+      }))
+  );
+
+  const routeReferences = routeRows.flatMap((row) =>
+    getRouteFileUris(row)
+      .filter(isLocalFileUri)
+      .map((uri) => ({
+        table: "routes",
+        id: row.id,
+        uri,
+        managed: isManagedMediaUri(uri),
+        exists: new File(uri).exists,
+      }))
+  );
+
+  const referencedLocalUris = uniqueStrings([
+    ...placeReferences.map((item) => item.uri),
+    ...routeReferences.map((item) => item.uri),
+  ]);
+
+  const missingReferencedUris = referencedLocalUris.filter((uri) => {
+    try {
+      return !new File(uri).exists;
+    } catch {
+      return true;
+    }
+  });
+
+  const managedFileUris = await listManagedMediaFilesRecursive();
+  const referencedManagedSet = new Set(
+    referencedLocalUris.filter(isManagedMediaUri)
+  );
+
+  const managedOrphanUris = managedFileUris.filter(
+    (uri) => !referencedManagedSet.has(uri)
+  );
+
+  return {
+    managedDirectoryUri: managedMediaDirectory.uri,
+    placeReferenceCount: placeReferences.length,
+    routeReferenceCount: routeReferences.length,
+    referencedLocalUriCount: referencedLocalUris.length,
+    managedFileCount: managedFileUris.length,
+    missingReferencedUriCount: missingReferencedUris.length,
+    managedOrphanCount: managedOrphanUris.length,
+    placeReferences,
+    routeReferences,
+    referencedLocalUris,
+    missingReferencedUris,
+    managedFileUris,
+    managedOrphanUris,
+  };
+}
+
+export async function cleanupManagedOrphanFiles() {
+  const audit = await getImageStorageAudit();
+
+  for (const uri of audit.managedOrphanUris) {
+    await deleteLocalFile(uri);
+  }
+
+  return {
+    ...audit,
+    deletedOrphanCount: audit.managedOrphanUris.length,
+  };
 }
 
 export async function setupDatabase() {
@@ -279,6 +457,7 @@ export async function setupDatabase() {
       note TEXT,
       image TEXT,
       images TEXT,
+      snapshotUri TEXT,
       startPlaceName TEXT,
       endPlaceName TEXT,
       startLatitude REAL,
@@ -368,6 +547,7 @@ export async function setupDatabase() {
     ["note", "TEXT"],
     ["image", "TEXT"],
     ["images", "TEXT"],
+    ["snapshotUri", "TEXT"],
     ["startPlaceName", "TEXT"],
     ["endPlaceName", "TEXT"],
     ["startLatitude", "REAL"],
@@ -396,6 +576,8 @@ export async function setupDatabase() {
     ["createdAt", "TEXT"],
     ["updatedAt", "TEXT"],
   ]);
+
+  await ensureManagedMediaDirectory();
 }
 
 export async function getAllPlaces() {
@@ -450,7 +632,7 @@ export async function savePlaceToDb(place, editingId = null) {
       throw new Error("Place not found.");
     }
 
-    const oldUris = getRowImageUris(existingPlace);
+    const oldUris = getPlaceFileUris(existingPlace);
 
     await db.runAsync(
       `UPDATE places
@@ -499,7 +681,7 @@ export async function savePlaceToDb(place, editingId = null) {
 
     const removedUris = oldUris.filter((uri) => !imageUris.includes(uri));
 
-    await deleteUnusedImageUris(removedUris, [{ table: "places", id: editingId }]);
+    await deleteUnusedManagedUris(removedUris, [{ table: "places", id: editingId }]);
 
     return editingId;
   }
@@ -580,10 +762,13 @@ export async function deletePlaceFromDb(id) {
     return;
   }
 
-  const imageUris = getRowImageUris(existingPlace);
+  const imageUris = getPlaceFileUris(existingPlace);
 
   await db.runAsync("DELETE FROM places WHERE id = ?", id);
-  await db.runAsync("UPDATE routes SET linkedPlaceId = NULL WHERE linkedPlaceId = ?", id);
+  await db.runAsync(
+    "UPDATE routes SET linkedPlaceId = NULL WHERE linkedPlaceId = ?",
+    id
+  );
 
   await createPendingSyncEntry({
     entityType: "place",
@@ -592,7 +777,7 @@ export async function deletePlaceFromDb(id) {
     payload: serialisePlaceRow(existingPlace),
   });
 
-  await deleteUnusedImageUris(imageUris);
+  await deleteUnusedManagedUris(imageUris);
 }
 
 export async function getAllRoutes() {
@@ -605,6 +790,7 @@ export async function getAllRoutes() {
       note,
       image,
       images,
+      snapshotUri,
       startPlaceName,
       endPlaceName,
       startLatitude,
@@ -628,7 +814,9 @@ export async function getAllRoutes() {
 export async function saveRouteToDb(route, editingId = null) {
   const db = await dbPromise;
   const { image, imagesJson, imageUris } = buildImageFields(route);
+  const snapshotUri = route.snapshotUri || null;
   const routePointsJson = JSON.stringify(route.routePoints || []);
+  const nextFileUris = uniqueStrings([snapshotUri, ...imageUris]);
 
   if (editingId) {
     const existingRoute = await db.getFirstAsync(
@@ -638,6 +826,7 @@ export async function saveRouteToDb(route, editingId = null) {
         note,
         image,
         images,
+        snapshotUri,
         startPlaceName,
         endPlaceName,
         startLatitude,
@@ -662,7 +851,7 @@ export async function saveRouteToDb(route, editingId = null) {
       throw new Error("Route not found.");
     }
 
-    const oldUris = getRowImageUris(existingRoute);
+    const oldUris = getRouteFileUris(existingRoute);
 
     await db.runAsync(
       `UPDATE routes
@@ -670,6 +859,7 @@ export async function saveRouteToDb(route, editingId = null) {
            note = ?,
            image = ?,
            images = ?,
+           snapshotUri = ?,
            startPlaceName = ?,
            endPlaceName = ?,
            startLatitude = ?,
@@ -688,6 +878,7 @@ export async function saveRouteToDb(route, editingId = null) {
       route.note || null,
       image,
       imagesJson,
+      snapshotUri,
       route.startPlaceName || null,
       route.endPlaceName || null,
       route.startLatitude ?? null,
@@ -713,6 +904,7 @@ export async function saveRouteToDb(route, editingId = null) {
         note: route.note || null,
         image,
         images: imageUris,
+        snapshotUri,
         startPlaceName: route.startPlaceName || null,
         endPlaceName: route.endPlaceName || null,
         startLatitude: route.startLatitude ?? null,
@@ -728,9 +920,9 @@ export async function saveRouteToDb(route, editingId = null) {
       },
     });
 
-    const removedUris = oldUris.filter((uri) => !imageUris.includes(uri));
+    const removedUris = oldUris.filter((uri) => !nextFileUris.includes(uri));
 
-    await deleteUnusedImageUris(removedUris, [{ table: "routes", id: editingId }]);
+    await deleteUnusedManagedUris(removedUris, [{ table: "routes", id: editingId }]);
 
     return editingId;
   }
@@ -741,6 +933,7 @@ export async function saveRouteToDb(route, editingId = null) {
       note,
       image,
       images,
+      snapshotUri,
       startPlaceName,
       endPlaceName,
       startLatitude,
@@ -756,11 +949,12 @@ export async function saveRouteToDb(route, editingId = null) {
       syncStatus,
       remoteId,
       lastSyncedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, NULL)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, NULL)`,
     route.title,
     route.note || null,
     image,
     imagesJson,
+    snapshotUri,
     route.startPlaceName || null,
     route.endPlaceName || null,
     route.startLatitude ?? null,
@@ -787,6 +981,7 @@ export async function saveRouteToDb(route, editingId = null) {
       note: route.note || null,
       image,
       images: imageUris,
+      snapshotUri,
       startPlaceName: route.startPlaceName || null,
       endPlaceName: route.endPlaceName || null,
       startLatitude: route.startLatitude ?? null,
@@ -821,6 +1016,7 @@ export async function updateRouteLinkedPlace(routeId, placeId) {
       note,
       image,
       images,
+      snapshotUri,
       startPlaceName,
       endPlaceName,
       startLatitude,
@@ -861,6 +1057,7 @@ export async function deleteRouteFromDb(id) {
       note,
       image,
       images,
+      snapshotUri,
       startPlaceName,
       endPlaceName,
       startLatitude,
@@ -885,7 +1082,7 @@ export async function deleteRouteFromDb(id) {
     return;
   }
 
-  const imageUris = getRowImageUris(existingRoute);
+  const fileUris = getRouteFileUris(existingRoute);
 
   await db.runAsync("DELETE FROM routes WHERE id = ?", id);
 
@@ -896,7 +1093,7 @@ export async function deleteRouteFromDb(id) {
     payload: serialiseRouteRow(existingRoute),
   });
 
-  await deleteUnusedImageUris(imageUris);
+  await deleteUnusedManagedUris(fileUris);
 }
 
 export async function getSafetyContact() {
@@ -1109,6 +1306,32 @@ export async function getPendingLocationLogs() {
   );
 }
 
+export async function getPendingLocationLogsForTrip(tripId) {
+  const db = await dbPromise;
+
+  return db.getAllAsync(
+    `SELECT
+      id,
+      tripId,
+      latitude,
+      longitude,
+      placeName,
+      recordedAt,
+      sendStatus,
+      sendAttempts,
+      lastAttemptAt,
+      sentVia,
+      syncStatus,
+      remoteId,
+      lastSyncedAt
+     FROM location_logs
+     WHERE tripId = ?
+       AND sendStatus != 'sent'
+     ORDER BY id ASC`,
+    tripId
+  );
+}
+
 export async function getLatestLocationLog() {
   const db = await dbPromise;
   const rows = await db.getAllAsync(
@@ -1155,6 +1378,34 @@ export async function getLatestPendingLocationLog() {
      WHERE sendStatus != 'sent'
      ORDER BY id DESC
      LIMIT 1`
+  );
+
+  return rows[0] || null;
+}
+
+export async function getLatestPendingLocationLogForTrip(tripId) {
+  const db = await dbPromise;
+  const rows = await db.getAllAsync(
+    `SELECT
+      id,
+      tripId,
+      latitude,
+      longitude,
+      placeName,
+      recordedAt,
+      sendStatus,
+      sendAttempts,
+      lastAttemptAt,
+      sentVia,
+      syncStatus,
+      remoteId,
+      lastSyncedAt
+     FROM location_logs
+     WHERE tripId = ?
+       AND sendStatus != 'sent'
+     ORDER BY id DESC
+     LIMIT 1`,
+    tripId
   );
 
   return rows[0] || null;

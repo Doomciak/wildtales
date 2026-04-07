@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
+import ScreenHeader from "../../components/ui/ScreenHeader";
 import { colors } from "../../constants/theme";
 import { radius, screen, spacing } from "../../constants/layout";
 
@@ -32,210 +33,245 @@ export default function AddPlaceScreen({
   isEditing,
 }) {
   const coverImage = images[0] || null;
+  const hasLocation = latitude != null && longitude != null;
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.addScrollContent}
     >
-      <Text style={styles.addTitle}>{isEditing ? "Update place" : "Add a place"}</Text>
-      <Text style={styles.addSubtitle}>
-        Save the places you want to remember beautifully.
-      </Text>
+      <ScreenHeader
+        title={isEditing ? "Update place" : "Add a place"}
+        subtitle="Save the places you want to remember beautifully."
+        maxWidth={280}
+        style={styles.addHeader}
+      />
 
       <View style={styles.formCard}>
-        <View style={styles.inputLabelRow}>
-          <Feather name="type" size={15} color={colors.textSecondary} />
-          <Text style={styles.inputLabel}>Place title</Text>
+        <View style={styles.field}>
+          <View style={styles.inputLabelRow}>
+            <Feather name="type" size={15} color={colors.textSecondary} />
+            <Text style={styles.inputLabel}>Place title</Text>
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Forest trail"
+            placeholderTextColor={colors.textDim}
+            value={title}
+            onChangeText={setTitle}
+          />
         </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Forest trail"
-          placeholderTextColor={colors.textDim}
-          value={title}
-          onChangeText={setTitle}
-        />
+        <View style={styles.field}>
+          <View style={styles.inputLabelRow}>
+            <Feather name="edit-3" size={15} color={colors.textSecondary} />
+            <Text style={styles.inputLabel}>Short note</Text>
+          </View>
 
-        <View style={styles.inputLabelRow}>
-          <Feather name="edit-3" size={15} color={colors.textSecondary} />
-          <Text style={styles.inputLabel}>Short note</Text>
+          <TextInput
+            style={[styles.input, styles.textarea]}
+            placeholder="What made this place special?"
+            placeholderTextColor={colors.textDim}
+            value={note}
+            onChangeText={setNote}
+            multiline
+            textAlignVertical="top"
+          />
         </View>
 
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          placeholder="What made this place special?"
-          placeholderTextColor={colors.textDim}
-          value={note}
-          onChangeText={setNote}
-          multiline
-          textAlignVertical="top"
-        />
+        <View style={styles.field}>
+          <View style={styles.inputLabelRow}>
+            <Feather name="image" size={15} color={colors.textSecondary} />
+            <Text style={styles.inputLabel}>Photos</Text>
+          </View>
 
-        <View style={styles.inputLabelRow}>
-          <Feather name="image" size={15} color={colors.textSecondary} />
-          <Text style={styles.inputLabel}>Photos</Text>
+          <Pressable
+            style={[styles.imageStage, !coverImage && styles.imageStageCompact]}
+            onPress={onOpenImageOptions}
+            onLongPress={onRemoveAllImages}
+            accessibilityRole="button"
+            accessibilityLabel={
+              coverImage ? "Edit place photos" : "Add place photos"
+            }
+          >
+            {coverImage ? (
+              <>
+                <Image source={{ uri: coverImage }} style={styles.imageStageImage} />
+
+                <View style={styles.imageBadgeTopRight}>
+                  <Feather name="edit-2" size={15} color={colors.textDark} />
+                </View>
+
+                {images.length > 0 ? (
+                  <View style={styles.imageCountPill}>
+                    <Feather name="image" size={12} color={colors.textPrimary} />
+                    <Text style={styles.imageCountText}>
+                      {images.length} photo{images.length === 1 ? "" : "s"}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <View style={styles.imageBadgeTopRight}>
+                  <Feather name="edit-2" size={15} color={colors.textDark} />
+                </View>
+
+                <View style={styles.emptyImageContent}>
+                  <View style={styles.emptyImageIconWrap}>
+                    <Ionicons
+                      name="images-outline"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                  <Text style={styles.imageStageTitle}>Add photos</Text>
+                  <Text style={styles.imageStageHint}>
+                    Tap to choose or take one
+                  </Text>
+                </View>
+              </>
+            )}
+          </Pressable>
+
+          {images.length > 1 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.addThumbsRow}
+            >
+              {images.map((uri, index) => (
+                <Pressable
+                  key={`${uri}-${index}`}
+                  onPress={onOpenImageOptions}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit photo ${index + 1}`}
+                >
+                  <Image source={{ uri }} style={styles.addThumb} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : null}
+
+          {images.length > 0 ? (
+            <Text style={styles.photoRemoveHint}>
+              Long press the photo area to remove all photos
+            </Text>
+          ) : null}
         </View>
 
-        <Pressable
-          style={[styles.imageStage, !coverImage && styles.imageStageCompact]}
-          onPress={onOpenImageOptions}
-          onLongPress={onRemoveAllImages}
-        >
-          {coverImage ? (
-            <>
-              <Image source={{ uri: coverImage }} style={styles.imageStageImage} />
-              <View style={styles.imageBadgeTopRight}>
-                <Feather name="edit-2" size={15} color={colors.textDark} />
-              </View>
+        <View style={styles.field}>
+          <View style={styles.inputLabelRow}>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={colors.textSecondary}
+            />
+            <Text style={styles.inputLabel}>Location</Text>
+          </View>
 
-              {images.length > 1 ? (
-                <View style={styles.imageCountPill}>
-                  <Text style={styles.imageCountText}>{images.length} photos</Text>
+          {hasLocation ? (
+            <View style={styles.locationCard}>
+              {placeName ? (
+                <View style={styles.inlineRow}>
+                  <Ionicons
+                    name="location-outline"
+                    size={14}
+                    color={colors.textPrimary}
+                  />
+                  <Text style={styles.locationPlaceName}>{placeName}</Text>
                 </View>
               ) : null}
-            </>
-          ) : (
-            <>
-              <View style={styles.imageBadgeTopRight}>
-                <Feather name="edit-2" size={15} color={colors.textDark} />
-              </View>
-              <Text style={styles.imageStageTitle}>Add photos</Text>
-              <Text style={styles.imageStageHint}>Tap to choose or take one</Text>
-            </>
-          )}
-        </Pressable>
 
-        {images.length > 1 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.addThumbsRow}
-          >
-            {images.map((uri, index) => (
-              <Image
-                key={`${uri}-${index}`}
-                source={{ uri }}
-                style={styles.addThumb}
-              />
-            ))}
-          </ScrollView>
-        ) : null}
-
-        {images.length > 0 ? (
-          <Text style={styles.photoRemoveHint}>
-            Long press the photo area to remove all photos
-          </Text>
-        ) : null}
-
-        <View style={styles.inputLabelRow}>
-          <Ionicons
-            name="location-outline"
-            size={16}
-            color={colors.textSecondary}
-          />
-          <Text style={styles.inputLabel}>Location</Text>
-        </View>
-
-        {latitude != null && longitude != null ? (
-          <View style={styles.locationCard}>
-            {placeName ? (
               <View style={styles.inlineRow}>
-                <Ionicons
-                  name="location-outline"
-                  size={14}
+                <Feather
+                  name="crosshair"
+                  size={13}
                   color={colors.textPrimary}
                 />
-                <Text style={styles.locationPlaceName}>{placeName}</Text>
+                <Text style={styles.locationText}>
+                  {Number(latitude).toFixed(3)}, {Number(longitude).toFixed(3)}
+                </Text>
               </View>
-            ) : null}
 
-            <View style={styles.inlineRow}>
-              <Feather
-                name="crosshair"
-                size={13}
-                color={colors.textPrimary}
-              />
-              <Text style={styles.locationText}>
-                {Number(latitude).toFixed(3)}, {Number(longitude).toFixed(3)}
-              </Text>
+              <View style={styles.locationActions}>
+                <Pressable
+                  style={styles.primaryMiniButton}
+                  onPress={onGetLocation}
+                  disabled={locationLoading}
+                >
+                  {locationLoading ? (
+                    <ActivityIndicator size="small" color={colors.textDark} />
+                  ) : (
+                    <Ionicons
+                      name="locate-outline"
+                      size={15}
+                      color={colors.textDark}
+                      style={styles.actionIcon}
+                    />
+                  )}
+                  <Text style={styles.primaryMiniButtonText}>
+                    {locationLoading ? "Finding..." : "Refresh"}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.secondaryMiniButton}
+                  onPress={onClearLocation}
+                >
+                  <Feather
+                    name="x-circle"
+                    size={15}
+                    color={colors.textSecondary}
+                    style={styles.actionIcon}
+                  />
+                  <Text style={styles.secondaryMiniButtonText}>Clear</Text>
+                </Pressable>
+              </View>
             </View>
-
-            <View style={styles.previewButtons}>
-              <Pressable
-                style={styles.smallActionButton}
-                onPress={onGetLocation}
-                disabled={locationLoading}
-              >
+          ) : (
+            <Pressable
+              style={styles.locationButton}
+              onPress={onGetLocation}
+              disabled={locationLoading}
+            >
+              <View style={styles.locationButtonContent}>
                 {locationLoading ? (
-                  <ActivityIndicator size="small" color={colors.textDark} />
+                  <ActivityIndicator size="small" color={colors.textPrimary} />
                 ) : (
                   <Ionicons
                     name="locate-outline"
-                    size={15}
-                    color={colors.textDark}
-                    style={styles.actionIcon}
+                    size={18}
+                    color={colors.textPrimary}
                   />
                 )}
-                <Text style={styles.smallActionButtonText}>
-                  {locationLoading ? "Finding..." : "Refresh location"}
+                <Text style={styles.locationButtonText}>
+                  {locationLoading ? "Finding location..." : "Use current location"}
                 </Text>
-              </Pressable>
+              </View>
+            </Pressable>
+          )}
+        </View>
 
-              <Pressable
-                style={styles.smallGhostButton}
-                onPress={onClearLocation}
-              >
-                <Feather
-                  name="x-circle"
-                  size={15}
-                  color={colors.textSecondary}
-                  style={styles.actionIcon}
-                />
-                <Text style={styles.smallGhostButtonText}>Clear</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <Pressable
-            style={styles.locationButton}
-            onPress={onGetLocation}
-            disabled={locationLoading}
-          >
-            <View style={styles.imagePickerContent}>
-              {locationLoading ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
-              ) : (
-                <Ionicons
-                  name="locate-outline"
-                  size={18}
-                  color={colors.textPrimary}
-                />
-              )}
-              <Text style={styles.imagePickerButtonText}>
-                {locationLoading ? "Finding location..." : "Use current location"}
+        <View style={styles.footer}>
+          {isEditing ? (
+            <Pressable style={styles.secondaryButton} onPress={onCancel}>
+              <Text style={styles.secondaryButtonText}>Cancel editing</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.footerSpacer} />
+          )}
+
+          <Pressable style={styles.primaryButton} onPress={onSavePlace}>
+            <View style={styles.buttonContent}>
+              <Feather name="save" size={14} color={colors.textDark} />
+              <Text style={styles.primaryButtonText}>
+                {isEditing ? "Update place" : "Save place"}
               </Text>
             </View>
           </Pressable>
-        )}
-
-        <Pressable style={styles.primaryButton} onPress={onSavePlace}>
-          <View style={styles.buttonContent}>
-            <Feather name="save" size={16} color={colors.textDark} />
-            <Text style={styles.primaryButtonText}>
-              {isEditing ? "Update place" : "Save place"}
-            </Text>
-          </View>
-        </Pressable>
-
-        {isEditing ? (
-          <Pressable style={styles.secondaryButton} onPress={onCancel}>
-            <View style={styles.buttonContent}>
-              <Feather name="x" size={15} color="#B7C8BE" />
-              <Text style={styles.secondaryButtonText}>Cancel editing</Text>
-            </View>
-          </Pressable>
-        ) : null}
+        </View>
       </View>
     </ScrollView>
   );
@@ -247,24 +283,17 @@ const styles = StyleSheet.create({
     paddingBottom: screen.bottomSpacing,
     paddingHorizontal: spacing.xl,
   },
-  addTitle: {
-    color: colors.textPrimary,
-    fontSize: 34,
-    fontWeight: "800",
-    marginBottom: spacing.sm,
-  },
-  addSubtitle: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 20,
+  addHeader: {
     marginBottom: spacing.xxl,
-    maxWidth: 280,
   },
   formCard: {
     backgroundColor: colors.surface,
-    borderRadius: 28,
+    borderRadius: radius.xxxl,
     padding: spacing.xl,
     marginBottom: 18,
+  },
+  field: {
+    marginBottom: spacing.md,
   },
   inputLabelRow: {
     flexDirection: "row",
@@ -278,28 +307,31 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.lg,
-    paddingHorizontal: 16,
+    borderRadius: radius.xl,
+    paddingHorizontal: 14,
     paddingVertical: 14,
     color: colors.textPrimary,
     fontSize: 15,
-    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
   textarea: {
     minHeight: 130,
   },
   imageStage: {
-    height: 180,
-    borderRadius: radius.xl,
+    height: 190,
+    borderRadius: radius.xxl - 2,
     backgroundColor: colors.surfaceAlt,
     marginBottom: spacing.md,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
   imageStageCompact: {
-    height: 145,
+    height: 150,
   },
   imageStageImage: {
     width: "100%",
@@ -309,13 +341,27 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.accent,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 2,
+  },
+  emptyImageContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  emptyImageIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.surfaceMuted,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.sm,
   },
   imageStageTitle: {
     color: colors.textPrimary,
@@ -331,6 +377,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     bottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "rgba(16,37,27,0.82)",
     borderRadius: radius.pill,
     paddingHorizontal: 12,
@@ -340,6 +388,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 12,
     fontWeight: "700",
+    marginLeft: 6,
   },
   addThumbsRow: {
     paddingRight: 6,
@@ -354,7 +403,6 @@ const styles = StyleSheet.create({
   photoRemoveHint: {
     color: colors.textDim,
     fontSize: 12,
-    marginBottom: spacing.lg,
   },
   inlineRow: {
     flexDirection: "row",
@@ -363,16 +411,18 @@ const styles = StyleSheet.create({
   },
   locationCard: {
     backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl - 2,
     padding: spacing.lg,
-    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
   locationButton: {
     backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     paddingVertical: 16,
     alignItems: "center",
-    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
   locationPlaceName: {
     color: colors.textPrimary,
@@ -388,12 +438,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     marginLeft: spacing.sm,
   },
-  previewButtons: {
+  locationActions: {
     flexDirection: "row",
   },
-  smallActionButton: {
+  primaryMiniButton: {
     flex: 1,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingVertical: 12,
     alignItems: "center",
@@ -401,12 +451,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginRight: 5,
   },
-  smallActionButtonText: {
+  primaryMiniButtonText: {
     color: colors.textDark,
     fontSize: 14,
     fontWeight: "700",
   },
-  smallGhostButton: {
+  secondaryMiniButton: {
     flex: 1,
     backgroundColor: colors.surfaceMuted,
     borderRadius: radius.pill,
@@ -416,44 +466,57 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginLeft: 5,
   },
-  smallGhostButtonText: {
+  secondaryMiniButtonText: {
     color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
-  imagePickerContent: {
+  locationButtonContent: {
     flexDirection: "row",
     alignItems: "center",
   },
-  imagePickerButtonText: {
+  locationButtonText: {
     color: colors.textPrimary,
     fontSize: 15,
     fontWeight: "600",
     marginHorizontal: 10,
   },
+  footer: {
+    flexDirection: "row",
+    marginTop: spacing.lg,
+  },
+  footerSpacer: {
+    flex: 1,
+    marginRight: 6,
+  },
   primaryButton: {
+    flex: 1,
     backgroundColor: colors.accent,
     borderRadius: radius.pill,
-    paddingVertical: 15,
+    paddingVertical: 14,
     alignItems: "center",
-    marginTop: spacing.xs,
+    justifyContent: "center",
+    marginLeft: 6,
   },
   primaryButtonText: {
     color: colors.textDark,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     marginLeft: spacing.sm,
   },
   secondaryButton: {
-    marginTop: spacing.md,
+    flex: 1,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
     alignItems: "center",
-    paddingVertical: 12,
+    justifyContent: "center",
+    marginRight: 6,
   },
   secondaryButtonText: {
-    color: "#B7C8BE",
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
-    marginLeft: spacing.sm,
   },
   buttonContent: {
     flexDirection: "row",
