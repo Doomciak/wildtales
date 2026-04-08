@@ -21,8 +21,9 @@ import {
   formatDistanceKm,
   formatDuration,
 } from "../../utils/travel";
-import useSafetyTrip from "./useSafetyTrip";
+import useSafetyTrip from "./logic/useSafetyTrip";
 
+// Screen component for safety tracking, trip controls, and recent location logs.
 export default function SafetyScreen({ onTripFinished }) {
   const {
     contact,
@@ -57,6 +58,7 @@ export default function SafetyScreen({ onTripFinished }) {
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
 
+  // Check whether the map region contains valid numeric values.
   const hasValidRegion = useMemo(() => {
     return Boolean(
       liveRegion &&
@@ -69,9 +71,11 @@ export default function SafetyScreen({ onTripFinished }) {
     );
   }, [liveRegion]);
 
+  // Show the map only when route data, latest point, and region are available.
   const canRenderMap =
     routeCoords.length > 0 && latestRoutePoint && hasValidRegion;
 
+  // Draw the route line only when there is more than one route point.
   const hasRouteLine = routeCoords.length > 1;
 
   useEffect(() => {
@@ -79,6 +83,7 @@ export default function SafetyScreen({ onTripFinished }) {
       return;
     }
 
+    // Update the visible map area after the map becomes ready.
     const frameId = requestAnimationFrame(() => {
       if (routeCoords.length > 1) {
         mapRef.current?.fitToCoordinates(routeCoords, {
@@ -93,6 +98,7 @@ export default function SafetyScreen({ onTripFinished }) {
         return;
       }
 
+      // Move the map to the current region when only one point exists.
       mapRef.current?.animateToRegion(liveRegion, 400);
     });
 
@@ -100,15 +106,18 @@ export default function SafetyScreen({ onTripFinished }) {
   }, [canRenderMap, routeCoords, mapReady, tripId, liveRegion]);
 
   useEffect(() => {
+    // Reset map readiness when the route can no longer be displayed.
     if (!canRenderMap) {
       setMapReady(false);
     }
   }, [canRenderMap]);
 
+  // Capture a map snapshot before stopping the trip.
   async function handleStopTripPress() {
     let snapshotUri = null;
 
     try {
+      // Save a snapshot file from the current map view.
       if (canRenderMap && mapReady && mapRef.current?.takeSnapshot) {
         snapshotUri = await mapRef.current.takeSnapshot({
           width: 1200,
@@ -209,6 +218,7 @@ export default function SafetyScreen({ onTripFinished }) {
           </View>
         </View>
 
+        {/* Render the offline status message. */}
         {isOffline ? (
           <View style={styles.offlineInfoBox}>
             <Ionicons
@@ -280,6 +290,7 @@ export default function SafetyScreen({ onTripFinished }) {
                 initialRegion={liveRegion}
                 onMapReady={() => setMapReady(true)}
               >
+                {/* Render the route polyline. */}
                 {hasRouteLine ? (
                   <Polyline
                     coordinates={routeCoords}
@@ -288,6 +299,7 @@ export default function SafetyScreen({ onTripFinished }) {
                   />
                 ) : null}
 
+                {/* Render the latest tracked point marker. */}
                 {latestRoutePoint ? (
                   <WildMarker
                     coordinate={latestRoutePoint}
@@ -340,6 +352,7 @@ export default function SafetyScreen({ onTripFinished }) {
           </>
         ) : (
           <>
+            {/* Render the map loading fallback card. */}
             <View style={styles.offlineMapCard}>
               <Ionicons
                 name="locate-outline"
@@ -390,14 +403,13 @@ export default function SafetyScreen({ onTripFinished }) {
         </View>
 
         <Text style={styles.subText}>
-          Real fallback stays the same: the app first tries online sending, and
-          if that still does not work after 3 failed tries or about 5 minutes,
-          it opens a text update with your latest saved location.
+            The app will first try to send your safety update online. If that does not
+  work after a few tries or after waiting a little while, it can open a text
+  message with your latest saved location instead.
         </Text>
 
         <Text style={styles.subText}>
-          The test button below uses a short 20 second timer only for testing,
-          so you do not need to wait 5 minutes every time.
+          The test button below uses a short 20 second timer only for testing.
         </Text>
 
         <View style={styles.updatesButtonsColumn}>
@@ -410,6 +422,7 @@ export default function SafetyScreen({ onTripFinished }) {
             disabled={retryingUploads}
           >
             <View style={styles.buttonContent}>
+              {/* Render a loader while retrying uploads. */}
               {retryingUploads ? (
                 <ActivityIndicator size="small" color={colors.textDark} />
               ) : (
@@ -462,6 +475,7 @@ export default function SafetyScreen({ onTripFinished }) {
           </Pressable>
         </View>
 
+        {/* Render the latest update status message. */}
         {updatesMessage ? (
           <View style={styles.updatesMessageBox}>
             <Feather
@@ -499,6 +513,7 @@ export default function SafetyScreen({ onTripFinished }) {
                   </Text>
                 </View>
 
+                {/* Render the status badge for the current log. */}
                 <View style={styles.statusBadge}>
                   <Feather
                     name={getStatusIcon(log)}

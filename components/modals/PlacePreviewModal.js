@@ -23,6 +23,7 @@ import {
   getPlaceLocationText,
 } from "../../utils/travel";
 
+// Modal used to preview one saved place in more detail.
 export default function PlacePreviewModal({
   place,
   onClose,
@@ -30,6 +31,9 @@ export default function PlacePreviewModal({
   onDeletePlace,
   activeRouteLink,
 }) {
+  // Build the list of images for this place.
+  // First use the normal images array, and if that is empty,
+  // fall back to the cover image.
   const previewImages = useMemo(() => {
     if (!place) {
       return [];
@@ -50,6 +54,8 @@ export default function PlacePreviewModal({
     return [];
   }, [place]);
 
+  // Convert image URIs into the gallery item format
+  // expected by the shared gallery hook and modal.
   const gallerySourceItems = useMemo(
     () =>
       previewImages.map((uri) => ({
@@ -60,6 +66,7 @@ export default function PlacePreviewModal({
     [previewImages]
   );
 
+  // Handle gallery state separately so this modal stays cleaner.
   const {
     galleryItems,
     galleryVisible,
@@ -72,7 +79,10 @@ export default function PlacePreviewModal({
     showNextItem,
   } = useImageGallery(gallerySourceItems, place?.id);
 
+  // Main image shown in the preview area.
   const selectedPreviewImage = selectedItem?.uri || null;
+
+  // Check whether the currently active live route belongs to this place.
   const previewHasLiveRoute =
     !!activeRouteLink && activeRouteLink.placeId === place?.id;
 
@@ -95,11 +105,13 @@ export default function PlacePreviewModal({
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.previewImageSection}>
               {selectedPreviewImage ? (
+                // Show the currently selected image if the place has photos.
                 <Image
                   source={{ uri: selectedPreviewImage }}
                   style={styles.previewMainImage}
                 />
               ) : (
+                // If there is no image, show a simple fallback using the first letter of the place title.
                 <View style={styles.previewMainFallback}>
                   <Text style={styles.previewFallbackLetter}>
                     {String(place?.title || "").charAt(0).toUpperCase()}
@@ -108,6 +120,7 @@ export default function PlacePreviewModal({
               )}
 
               {galleryItems.length > 0 ? (
+                // Small badge on the image that opens the gallery.
                 <Pressable
                   style={styles.photosBadge}
                   onPress={() => openGalleryAt(previewImageIndex)}
@@ -128,6 +141,7 @@ export default function PlacePreviewModal({
             </View>
 
             {galleryItems.length > 1 ? (
+              // Show thumbnails only when there is more than one image.
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -153,6 +167,7 @@ export default function PlacePreviewModal({
 
             <Text style={styles.previewPlaceTitle}>{place?.title}</Text>
 
+            {/* Show the formatted place location only if it exists */}
             {getPlaceLocationText(place || {}) ? (
               <View style={styles.inlineRow}>
                 <Ionicons
@@ -167,6 +182,8 @@ export default function PlacePreviewModal({
             ) : null}
 
             {previewHasLiveRoute && activeRouteLink ? (
+              // If this place is linked to the active live route,
+              // show a short summary of that route here.
               <View style={styles.previewRouteCard}>
                 <View style={styles.inlineRow}>
                   <Ionicons
@@ -187,6 +204,7 @@ export default function PlacePreviewModal({
             ) : null}
 
             {place?.latitude != null && place?.longitude != null ? (
+              // Coordinates are shown only when the place has valid saved latitude and longitude.
               <View style={styles.inlineRow}>
                 <Feather
                   name="crosshair"
@@ -207,6 +225,8 @@ export default function PlacePreviewModal({
             leftAction={{
               label: "Edit place",
               onPress: () => {
+                // Keep the selected place before closing the modal
+                // so it can be passed into the edit flow.
                 const placeToEdit = place;
                 onClose();
                 onEditPlace(placeToEdit);
@@ -218,6 +238,7 @@ export default function PlacePreviewModal({
             rightAction={{
               label: "Delete",
               onPress: () => {
+                // Close the preview first, then delete by id.
                 const currentPlace = place;
                 onClose();
                 onDeletePlace?.(currentPlace.id);
@@ -230,6 +251,7 @@ export default function PlacePreviewModal({
         </ModalCardShell>
       </Modal>
 
+      {/* Separate image gallery opened from the preview image or thumbnails */}
       <ImageGalleryModal
         visible={galleryVisible}
         onClose={closeGallery}

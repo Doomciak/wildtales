@@ -69,6 +69,7 @@ function AppContent() {
     setEditingRouteTitle,
     editingRouteNote,
     setEditingRouteNote,
+    editingRouteImages,
     savingRouteEdit,
 
     placesWithDetails,
@@ -90,6 +91,7 @@ function AppContent() {
     setSelectedCity,
 
     saveTripModalVisible,
+    finishedTripDraft,
     finishedTripTitle,
     setFinishedTripTitle,
     finishedTripNote,
@@ -102,6 +104,8 @@ function AppContent() {
     savePlace,
     cancelEditing,
     openImageOptions,
+    openReplaceImageOptions,
+    removeImageAtIndex,
     confirmRemoveAllImages,
     getCurrentLocation,
     clearLocation,
@@ -113,14 +117,23 @@ function AppContent() {
     closeRouteEditing,
     saveRouteChanges,
     openJourneyPhotoOptions,
+    openJourneyEditImageOptions,
+    openReplaceJourneyEditImageOptions,
+    removeEditingImageAt,
+    confirmRemoveAllEditingImages,
 
     handleTripFinished,
     closeFinishedTripModal,
     saveFinishedTripAsJourney,
+    openFinishedTripImageOptions,
+    openReplaceFinishedTripImageOptions,
+    removeFinishedTripImageAt,
+    confirmRemoveAllFinishedTripImages,
 
     clearForm,
   } = useTravelApp();
 
+  // Use safe area values so the floating tab bar sits above device navigation.
   const safeBottomInset = insets.bottom;
   const tabBarBottomOffset = Math.max(safeBottomInset, 8) + 8;
   const contentBottomPadding =
@@ -136,6 +149,7 @@ function AppContent() {
     );
   }
 
+  // The welcome screen is shown only at app entry before the main navigation.
   if (showWelcome) {
     return <WelcomeScreen onContinue={() => setShowWelcome(false)} />;
   }
@@ -144,6 +158,7 @@ function AppContent() {
     <View style={styles.screen}>
       <StatusBar style="light" />
 
+      {/* Main screen content changes depending on the currently selected tab. */}
       <View style={[styles.content, { paddingBottom: contentBottomPadding }]}>
         {activeTab === "home" ? (
           <HomeScreen
@@ -157,6 +172,7 @@ function AppContent() {
             onOpenPlaces={() => setActiveTab("places")}
             onOpenRoutes={() => setActiveTab("journeys")}
             onOpenAdd={() => {
+              // Opening Add from Home should start with a clean form.
               clearForm();
               setActiveTab("add");
             }}
@@ -180,6 +196,7 @@ function AppContent() {
             selectedCountry={selectedCountry}
             selectedCity={selectedCity}
             onSelectCountry={(value) => {
+              // Reset city when country changes so filters stay consistent.
               setSelectedCountry(value);
               setSelectedCity("All");
             }}
@@ -215,6 +232,8 @@ function AppContent() {
             onSavePlace={savePlace}
             onCancel={cancelEditing}
             onOpenImageOptions={openImageOptions}
+            onReplaceImage={openReplaceImageOptions}
+            onRemoveImage={removeImageAtIndex}
             onRemoveAllImages={confirmRemoveAllImages}
             onGetLocation={getCurrentLocation}
             onClearLocation={clearLocation}
@@ -223,6 +242,7 @@ function AppContent() {
         )}
       </View>
 
+      {/* Floating bottom navigation used to switch between the main app sections. */}
       <View
         style={[
           styles.tabBarWrap,
@@ -257,7 +277,7 @@ function AppContent() {
           />
 
           <TabButton
-            label="Routes"
+            label="Journeys"
             icon="trail-sign-outline"
             isActive={activeTab === "journeys"}
             onPress={() => setActiveTab("journeys")}
@@ -268,6 +288,7 @@ function AppContent() {
             icon="add-circle-outline"
             isActive={activeTab === "add"}
             onPress={() => {
+              // If the user is switching into Add, clear old draft data first.
               if (activeTab !== "add") {
                 clearForm();
               }
@@ -277,6 +298,7 @@ function AppContent() {
         </View>
       </View>
 
+      {/* This modal appears after finishing a tracked trip so it can be saved as a journey. */}
       <SaveTripModal
         visible={saveTripModalVisible}
         saving={savingTripChoice}
@@ -284,13 +306,19 @@ function AppContent() {
         setTripTitle={setFinishedTripTitle}
         tripNote={finishedTripNote}
         setTripNote={setFinishedTripNote}
+        tripImages={finishedTripDraft?.images || []}
         distanceText={finishedTripDistanceText}
         durationText={finishedTripDurationText}
         locationLine={finishedTripLocationLine}
+        onAddImages={openFinishedTripImageOptions}
+        onReplaceImage={openReplaceFinishedTripImageOptions}
+        onRemoveImage={removeFinishedTripImageAt}
+        onRemoveAllImages={confirmRemoveAllFinishedTripImages}
         onClose={closeFinishedTripModal}
         onSaveJourney={saveFinishedTripAsJourney}
       />
 
+      {/* Separate modal used when editing an already saved journey. */}
       <EditJourneyModal
         visible={Boolean(editingRoute)}
         savingRouteEdit={savingRouteEdit}
@@ -298,6 +326,11 @@ function AppContent() {
         setEditingRouteTitle={setEditingRouteTitle}
         editingRouteNote={editingRouteNote}
         setEditingRouteNote={setEditingRouteNote}
+        editingRouteImages={editingRouteImages}
+        onAddImages={openJourneyEditImageOptions}
+        onReplaceImage={openReplaceJourneyEditImageOptions}
+        onRemoveImage={removeEditingImageAt}
+        onRemoveAllImages={confirmRemoveAllEditingImages}
         onClose={closeRouteEditing}
         onSaveChanges={saveRouteChanges}
       />
@@ -306,6 +339,7 @@ function AppContent() {
 }
 
 export default function App() {
+  // SafeAreaProvider makes inset values available across the app.
   return (
     <SafeAreaProvider>
       <AppContent />

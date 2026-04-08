@@ -1,17 +1,28 @@
 import * as Location from "expo-location";
 
-export const MAX_ACCEPTED_ACCURACY_METERS = 120;
-export const MIN_POINT_DISTANCE_METERS = 3;
+// Maximum GPS accuracy value accepted when creating a point.
+export const MAX_ACCEPTED_ACCURACY_METERS = 35;
+
+// Minimum distance required between two points.
+export const MIN_POINT_DISTANCE_METERS = 10;
+
+// Maximum accepted speed used to ignore unrealistic jumps.
+export const MAX_JUMP_SPEED_METERS_PER_SECOND = 20;
+
+// Maximum time allowed for reverse geocoding before using a fallback label.
 export const PLACE_NAME_TIMEOUT_MS = 1500;
 
+// Format coordinates into a readable text label.
 export function buildCoordinateLabel(latitude, longitude) {
   return `${Number(latitude).toFixed(5)}, ${Number(longitude).toFixed(5)}`;
 }
 
+// Convert degrees to radians for distance calculations.
 function toRadians(value) {
   return (value * Math.PI) / 180;
 }
 
+// Calculate the distance in meters between two coordinate points.
 export function getDistanceMeters(pointA, pointB) {
   if (!pointA || !pointB) {
     return 0;
@@ -35,15 +46,18 @@ export function getDistanceMeters(pointA, pointB) {
   return earthRadius * c;
 }
 
-export function getCleanPointFromCoords(coords) {
+// Build a cleaned point object from raw Expo location coordinates.
+export function getCleanPointFromCoords(coords, timestamp = Date.now()) {
   const latitude = Number(coords?.latitude);
   const longitude = Number(coords?.longitude);
   const accuracy = Number(coords?.accuracy);
 
+  // Stop if the coordinates are missing or invalid.
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null;
   }
 
+  // Stop if the accuracy value is worse than the allowed limit.
   if (Number.isFinite(accuracy) && accuracy > MAX_ACCEPTED_ACCURACY_METERS) {
     return null;
   }
@@ -51,18 +65,23 @@ export function getCleanPointFromCoords(coords) {
   return {
     latitude,
     longitude,
+    accuracy: Number.isFinite(accuracy) ? accuracy : null,
+    timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
   };
 }
 
+// Decide whether a new point should be kept.
 export function shouldKeepPoint(lastPoint, nextPoint) {
   if (!nextPoint) {
     return false;
   }
 
+  // Keep the first valid point.
   if (!lastPoint) {
     return true;
   }
 
+  // Ignore identical coordinates.
   if (
     lastPoint.latitude === nextPoint.latitude &&
     lastPoint.longitude === nextPoint.longitude
@@ -70,9 +89,30 @@ export function shouldKeepPoint(lastPoint, nextPoint) {
     return false;
   }
 
-  return getDistanceMeters(lastPoint, nextPoint) >= MIN_POINT_DISTANCE_METERS;
+  const distance = getDistanceMeters(lastPoint, nextPoint);
+
+  // Ignore points that are too close to the previous one.
+  if (distance < MIN_POINT_DISTANCE_METERS) {
+    return false;
+  }
+
+  const lastTimestamp = Number(lastPoint.timestamp);
+  const nextTimestamp = Number(nextPoint.timestamp);
+
+  // Ignore points that would require an unrealistic travel speed.
+  if (Number.isFinite(lastTimestamp) && Number.isFinite(nextTimestamp)) {
+    const seconds = Math.max(1, (nextTimestamp - lastTimestamp) / 1000);
+    const speed = distance / seconds;
+
+    if (speed > MAX_JUMP_SPEED_METERS_PER_SECOND) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
+// Add a new point only when it passes the keep checks.
 export function appendMeaningfulCoordinate(current, nextPoint) {
   const safeCurrent = Array.isArray(current) ? current : [];
   const lastPoint = safeCurrent[safeCurrent.length - 1];
@@ -84,6 +124,7 @@ export function appendMeaningfulCoordinate(current, nextPoint) {
   return [...safeCurrent, nextPoint];
 }
 
+// Build a new pending location log object.
 export function buildPendingLocationLog({
   id,
   tripId,
@@ -106,6 +147,7 @@ export function buildPendingLocationLog({
   };
 }
 
+// Build a readable place name from coordinates.
 export async function buildPlaceNameFromCoords(
   latitude,
   longitude,
@@ -116,6 +158,7 @@ export async function buildPlaceNameFromCoords(
   try {
     const timeoutToken = Symbol("place-name-timeout");
 
+    // Run reverse geocoding with a timeout fallback.
     const result = await Promise.race([
       Location.reverseGeocodeAsync({
         latitude,
@@ -126,12 +169,14 @@ export async function buildPlaceNameFromCoords(
       }),
     ]);
 
+    // Use the coordinate label if reverse geocoding times out or returns nothing.
     if (result === timeoutToken || !Array.isArray(result) || !result.length) {
       return fallbackName;
     }
 
     const first = result[0];
 
+    // Return the best available place name from the geocoding result.
     return (
       [first.city, first.country].filter(Boolean).join(", ") ||
       first.district ||

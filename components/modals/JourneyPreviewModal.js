@@ -28,6 +28,8 @@ import {
   getRouteLocationLine,
 } from "../../utils/travel";
 
+// This modal shows the full preview of a saved journey,
+// including route details, map or snapshot, and related photos.
 export default function JourneyPreviewModal({
   route,
   onClose,
@@ -35,7 +37,11 @@ export default function JourneyPreviewModal({
   onDeleteJourney,
   onAddJourneyPhotos,
 }) {
+  // Route points used to draw the saved journey path on the map.
   const previewPoints = route?.routePoints || [];
+
+  // Fallback point used when there is no full route path
+  // but the saved journey still has an end location.
   const previewFallbackPoint =
     route?.endLatitude != null && route?.endLongitude != null
       ? {
@@ -44,16 +50,20 @@ export default function JourneyPreviewModal({
         }
       : null;
 
+  // Calculate the map region only when the route data changes.
   const previewRegion = useMemo(() => {
     return getMapRegionForPoints(previewPoints, previewFallbackPoint);
   }, [previewPoints, previewFallbackPoint]);
 
+  // First and last points are used to show start and finish markers.
   const firstPreviewPoint = previewPoints[0] || previewFallbackPoint || null;
   const lastPreviewPoint =
     previewPoints[previewPoints.length - 1] || previewFallbackPoint || null;
 
   const snapshotUri = route?.snapshotUri || null;
 
+  // Keep only valid image URIs and remove duplicates.
+  // If the route snapshot is already stored separately, do not repeat it in the photo list.
   const journeyImages = useMemo(() => {
     const rawImages = Array.isArray(route?.images) ? route.images : [];
     const filtered = rawImages.filter(Boolean);
@@ -65,6 +75,8 @@ export default function JourneyPreviewModal({
     return [...new Set(filtered.filter((uri) => uri !== snapshotUri))];
   }, [route?.images, snapshotUri]);
 
+  // Build one gallery list that can contain both the route snapshot
+  // and the extra journey photos in the correct order.
   const gallerySourceItems = useMemo(() => {
     const items = [];
 
@@ -87,6 +99,8 @@ export default function JourneyPreviewModal({
     return items;
   }, [snapshotUri, journeyImages]);
 
+  // Gallery state and navigation are handled in a separate hook
+  // so the modal stays cleaner and easier to manage.
   const {
     galleryItems,
     galleryVisible,
@@ -98,8 +112,11 @@ export default function JourneyPreviewModal({
     showNextItem,
   } = useImageGallery(gallerySourceItems, route?.id);
 
+  // If a snapshot exists, journey photos start after it in the gallery.
   const photoGalleryStartIndex = snapshotUri ? 1 : 0;
 
+  // Open the gallery at the first journey photo if any exist.
+  // If there are no extra photos, fall back to the snapshot.
   const openJourneyPhotosGallery = () => {
     if (journeyImages.length > 0) {
       openGalleryAt(photoGalleryStartIndex);
@@ -111,6 +128,7 @@ export default function JourneyPreviewModal({
     }
   };
 
+  // Close both the preview modal and the image gallery.
   const closeAll = () => {
     closeGallery();
     onClose();
@@ -134,6 +152,7 @@ export default function JourneyPreviewModal({
 
           <ScrollView showsVerticalScrollIndicator={false}>
             {snapshotUri ? (
+              // If a saved snapshot exists, show it as the main preview.
               <View style={styles.heroImageWrap}>
                 <Image source={{ uri: snapshotUri }} style={styles.heroImage} />
 
@@ -147,6 +166,7 @@ export default function JourneyPreviewModal({
                 </View>
               </View>
             ) : previewPoints.length > 0 || previewFallbackPoint ? (
+              // If there is no snapshot, fall back to a small read-only map preview.
               <View style={styles.journeyPreviewMapWrap}>
                 <MapView
                   key={route?.id || "journey-preview-map"}
@@ -195,6 +215,7 @@ export default function JourneyPreviewModal({
                 </View>
               </View>
             ) : (
+              // Final fallback when there is no snapshot and no usable route data.
               <View style={styles.previewMainFallback}>
                 <Ionicons
                   name="trail-sign-outline"
@@ -206,6 +227,7 @@ export default function JourneyPreviewModal({
 
             <Text style={styles.previewPlaceTitle}>{route?.title}</Text>
 
+            {/* Show the saved location line only when location data exists */}
             {getRouteLocationLine(route || {}) ? (
               <View style={styles.inlineRow}>
                 <Ionicons
@@ -242,6 +264,7 @@ export default function JourneyPreviewModal({
               <View style={styles.photosTitleGroup}>
                 <Text style={styles.photosTitle}>Journey photos</Text>
 
+                {/* Photo count pill also works as a shortcut to open the gallery */}
                 {(journeyImages.length > 0 || snapshotUri) && (
                   <InfoPill
                     icon="images-outline"
@@ -288,6 +311,7 @@ export default function JourneyPreviewModal({
                 ))}
               </ScrollView>
             ) : (
+              // Empty state shown when the journey has no extra photos yet.
               <View style={styles.photosEmptyCard}>
                 <Ionicons
                   name="image-outline"
@@ -305,6 +329,8 @@ export default function JourneyPreviewModal({
             leftAction={{
               label: "Edit journey",
               onPress: () => {
+                // Keep a reference before closing so the selected journey
+                // can still be passed to the edit flow.
                 const currentRoute = route;
                 closeAll();
                 onEditJourney(currentRoute);
@@ -316,6 +342,7 @@ export default function JourneyPreviewModal({
             rightAction={{
               label: "Delete",
               onPress: () => {
+                // Close the preview first, then pass the journey id to delete.
                 const currentRoute = route;
                 closeAll();
                 onDeleteJourney(currentRoute.id);
@@ -328,6 +355,7 @@ export default function JourneyPreviewModal({
         </ModalCardShell>
       </Modal>
 
+      {/* Separate image gallery opened from the snapshot, photo counter, or thumbnails */}
       <ImageGalleryModal
         visible={galleryVisible}
         onClose={closeGallery}

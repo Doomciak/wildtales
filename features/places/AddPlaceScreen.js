@@ -1,6 +1,5 @@
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,10 +9,12 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
+import EditableImageManager from "../../components/ui/EditableImageManager";
 import ScreenHeader from "../../components/ui/ScreenHeader";
 import { colors } from "../../constants/theme";
 import { radius, screen, spacing } from "../../constants/layout";
 
+// Screen used for both creating a new place and editing an existing one.
 export default function AddPlaceScreen({
   title,
   note,
@@ -27,12 +28,15 @@ export default function AddPlaceScreen({
   onSavePlace,
   onCancel,
   onOpenImageOptions,
+  onReplaceImage,
+  onRemoveImage,
   onRemoveAllImages,
   onGetLocation,
   onClearLocation,
   isEditing,
 }) {
-  const coverImage = images[0] || null;
+  // Used to decide whether location details should be shown
+  // or whether the user still needs to fetch a location.
   const hasLocation = latitude != null && longitude != null;
 
   return (
@@ -80,86 +84,23 @@ export default function AddPlaceScreen({
           />
         </View>
 
-        <View style={styles.field}>
-          <View style={styles.inputLabelRow}>
-            <Feather name="image" size={15} color={colors.textSecondary} />
-            <Text style={styles.inputLabel}>Photos</Text>
-          </View>
-
-          <Pressable
-            style={[styles.imageStage, !coverImage && styles.imageStageCompact]}
-            onPress={onOpenImageOptions}
-            onLongPress={onRemoveAllImages}
-            accessibilityRole="button"
-            accessibilityLabel={
-              coverImage ? "Edit place photos" : "Add place photos"
-            }
-          >
-            {coverImage ? (
-              <>
-                <Image source={{ uri: coverImage }} style={styles.imageStageImage} />
-
-                <View style={styles.imageBadgeTopRight}>
-                  <Feather name="edit-2" size={15} color={colors.textDark} />
-                </View>
-
-                {images.length > 0 ? (
-                  <View style={styles.imageCountPill}>
-                    <Feather name="image" size={12} color={colors.textPrimary} />
-                    <Text style={styles.imageCountText}>
-                      {images.length} photo{images.length === 1 ? "" : "s"}
-                    </Text>
-                  </View>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <View style={styles.imageBadgeTopRight}>
-                  <Feather name="edit-2" size={15} color={colors.textDark} />
-                </View>
-
-                <View style={styles.emptyImageContent}>
-                  <View style={styles.emptyImageIconWrap}>
-                    <Ionicons
-                      name="images-outline"
-                      size={20}
-                      color={colors.textSecondary}
-                    />
-                  </View>
-                  <Text style={styles.imageStageTitle}>Add photos</Text>
-                  <Text style={styles.imageStageHint}>
-                    Tap to choose or take one
-                  </Text>
-                </View>
-              </>
-            )}
-          </Pressable>
-
-          {images.length > 1 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.addThumbsRow}
-            >
-              {images.map((uri, index) => (
-                <Pressable
-                  key={`${uri}-${index}`}
-                  onPress={onOpenImageOptions}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Edit photo ${index + 1}`}
-                >
-                  <Image source={{ uri }} style={styles.addThumb} />
-                </Pressable>
-              ))}
-            </ScrollView>
-          ) : null}
-
-          {images.length > 0 ? (
-            <Text style={styles.photoRemoveHint}>
-              Long press the photo area to remove all photos
-            </Text>
-          ) : null}
-        </View>
+        {/* Shared image manager now handles add / replace / remove actions
+            so place photo editing behaves the same way as journeys. */}
+        <EditableImageManager
+          label="Photos"
+          images={images}
+          onAddImages={onOpenImageOptions}
+          onReplaceImage={onReplaceImage}
+          onRemoveImage={onRemoveImage}
+          onRemoveAllImages={onRemoveAllImages}
+          emptyTitle="Add photos"
+          emptyHint="Tap to choose or take one"
+          addMoreLabel="Add more"
+          removeAllLabel="Remove all"
+          coverLabel="Cover"
+          helperText="Tap the main image to add more. Use the thumbnail buttons below to replace or remove one photo."
+          stageHeight={190}
+        />
 
         <View style={styles.field}>
           <View style={styles.inputLabelRow}>
@@ -173,6 +114,7 @@ export default function AddPlaceScreen({
 
           {hasLocation ? (
             <View style={styles.locationCard}>
+              {/* Place name is shown only if a readable name was found. */}
               {placeName ? (
                 <View style={styles.inlineRow}>
                   <Ionicons
@@ -184,6 +126,7 @@ export default function AddPlaceScreen({
                 </View>
               ) : null}
 
+              {/* Coordinates are kept visible even if there is no place name. */}
               <View style={styles.inlineRow}>
                 <Feather
                   name="crosshair"
@@ -201,6 +144,7 @@ export default function AddPlaceScreen({
                   onPress={onGetLocation}
                   disabled={locationLoading}
                 >
+                  {/* While refreshing location, show a loader instead of the icon. */}
                   {locationLoading ? (
                     <ActivityIndicator size="small" color={colors.textDark} />
                   ) : (
@@ -231,6 +175,7 @@ export default function AddPlaceScreen({
               </View>
             </View>
           ) : (
+            // If no location has been added yet, show one main button to fetch it.
             <Pressable
               style={styles.locationButton}
               onPress={onGetLocation}
@@ -255,6 +200,7 @@ export default function AddPlaceScreen({
         </View>
 
         <View style={styles.footer}>
+          {/* Cancel button is only shown in edit mode. */}
           {isEditing ? (
             <Pressable style={styles.secondaryButton} onPress={onCancel}>
               <Text style={styles.secondaryButtonText}>Cancel editing</Text>
@@ -317,92 +263,6 @@ const styles = StyleSheet.create({
   },
   textarea: {
     minHeight: 130,
-  },
-  imageStage: {
-    height: 190,
-    borderRadius: radius.xxl - 2,
-    backgroundColor: colors.surfaceAlt,
-    marginBottom: spacing.md,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  imageStageCompact: {
-    height: 150,
-  },
-  imageStageImage: {
-    width: "100%",
-    height: "100%",
-  },
-  imageBadgeTopRight: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accent,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
-  emptyImageContent: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  emptyImageIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.surfaceMuted,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: spacing.sm,
-  },
-  imageStageTitle: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  imageStageHint: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  imageCountPill: {
-    position: "absolute",
-    left: 12,
-    bottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(16,37,27,0.82)",
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  imageCountText: {
-    color: colors.textPrimary,
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 6,
-  },
-  addThumbsRow: {
-    paddingRight: 6,
-    marginBottom: 10,
-  },
-  addThumb: {
-    width: 74,
-    height: 74,
-    borderRadius: radius.md,
-    marginRight: 10,
-  },
-  photoRemoveHint: {
-    color: colors.textDim,
-    fontSize: 12,
   },
   inlineRow: {
     flexDirection: "row",

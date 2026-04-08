@@ -3,15 +3,18 @@ import { Pressable, StyleSheet, Text } from "react-native";
 import { colors } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 
+// Small button used for filter and sort options.
 export default function FilterChip({ label, active, onPress }) {
   return (
     <Pressable
+      // Change the chip style when this option is currently selected.
       style={[styles.filterChip, active && styles.filterChipActive]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
       <Text
+        // Text colour also changes to match the active state.
         style={[styles.filterChipText, active && styles.filterChipTextActive]}
       >
         {label}

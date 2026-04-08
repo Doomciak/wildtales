@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../../constants/theme";
 import { spacing } from "../../constants/layout";
 
+// Shared header used at the top of screens.
 export default function ScreenHeader({
   title,
   subtitle,
@@ -15,6 +16,7 @@ export default function ScreenHeader({
     <View style={[styles.container, style]}>
       <Text style={[styles.title, titleStyle]}>{title}</Text>
 
+      {/* Subtitle is optional, so only render it when it exists */}
       {subtitle ? (
         <Text style={[styles.subtitle, { maxWidth }, subtitleStyle]}>
           {subtitle}

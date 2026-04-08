@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { colors } from "../../../constants/theme";
 import { radius, spacing } from "../../../constants/layout";
 
+// Text input used in modals, with an optional icon next to the label.
 export default function ModalTextField({
   label,
   iconName,
@@ -17,14 +18,18 @@ export default function ModalTextField({
   return (
     <View style={styles.field}>
       <View style={styles.labelRow}>
+        {/* Show the icon only when one is passed in */}
         {iconName ? (
           <Feather name={iconName} size={15} color={colors.textSecondary} />
         ) : null}
 
-        <Text style={[styles.label, !iconName && styles.labelNoIcon]}>{label}</Text>
+        <Text style={[styles.label, !iconName && styles.labelNoIcon]}>
+          {label}
+        </Text>
       </View>
 
       <TextInput
+        // If multiline is enabled, allow the input to grow taller
         style={[styles.input, multiline && { minHeight }]}
         value={value}
         onChangeText={onChangeText}
@@ -32,6 +37,7 @@ export default function ModalTextField({
         placeholderTextColor={colors.textDim}
         editable={editable}
         multiline={multiline}
+        // For multiline fields, start typing from the top instead of the middle
         textAlignVertical={multiline ? "top" : "center"}
       />
     </View>

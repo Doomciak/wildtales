@@ -3,11 +3,13 @@ import { map } from "../constants/layout";
 
 export const ROUTE_LINE_COLOR = colors.routeLine;
 
+// Safely convert a value to a number.
+// If conversion fails, return null instead of an invalid number.
 function toNumber(value) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
-
+// Check that a point exists and has usable latitude and longitude values.
 function isValidPoint(point) {
   return (
     point &&
@@ -17,6 +19,7 @@ function isValidPoint(point) {
 }
 
 function normalizePoint(point) {
+  // Convert any valid point into a clean numeric latitude/longitude object.
   if (!isValidPoint(point)) {
     return null;
   }
@@ -27,18 +30,22 @@ function normalizePoint(point) {
   };
 }
 
+// Convert degrees to radians before using trigonometric distance calculations.
 export function toRadians(value) {
   return (Number(value) * Math.PI) / 180;
 }
 
 export function getDistanceKm(pointA, pointB) {
+    // First make sure both points are in a clean numeric format.
   const start = normalizePoint(pointA);
   const end = normalizePoint(pointB);
 
+  // If either point is invalid, return 0 instead of breaking calculations.
   if (!start || !end) {
     return 0;
   }
 
+  // Haversine formula used to calculate distance between two coordinates.
   const earthRadiusKm = 6371;
   const dLat = toRadians(end.latitude - start.latitude);
   const dLon = toRadians(end.longitude - start.longitude);
@@ -57,6 +64,8 @@ export function getDistanceKm(pointA, pointB) {
 }
 
 export function getPathDistanceKm(coords = []) {
+  // Total route distance is built by summing the distance
+  // between each pair of neighbouring points.
   if (!Array.isArray(coords) || coords.length < 2) {
     return 0;
   }
@@ -77,6 +86,7 @@ export function formatDistanceKm(distanceKm) {
     return "0 km";
   }
 
+  // Keep very small distances readable instead of showing long decimals.
   if (value < 0.1) {
     return "0.1 km";
   }
@@ -116,10 +126,15 @@ export function getShortPlaceLabel(placeName) {
     return "";
   }
 
+  // For longer location strings like "Glasgow, Scotland",
+  // only use the first part for shorter labels and titles.
   return cleanText.split(",")[0].trim();
 }
 
 export function buildJourneyTitleFromTrip(tripOrStart, maybeEnd) {
+  // This supports both:
+  // 1. a trip object with startPlaceName and endPlaceName
+  // 2. two separate start and end values
   const startPlaceName =
     typeof tripOrStart === "object" && tripOrStart !== null
       ? tripOrStart.startPlaceName
@@ -170,6 +185,7 @@ export function getRouteLocationLine(route = {}) {
   const startPlace = String(route.startPlaceName || "").trim();
   const endPlace = String(route.endPlaceName || "").trim();
 
+  // If both ends are known and different, show a route line.
   if (startPlace && endPlace && startPlace !== endPlace) {
     return `${startPlace} → ${endPlace}`;
   }
@@ -181,6 +197,7 @@ export function getMapRegionForPoints(points = [], fallbackPoint = null) {
   const validPoints = points.map(normalizePoint).filter(Boolean);
   const fallback = normalizePoint(fallbackPoint);
 
+  // One point: use a fixed closer zoom.
   if (validPoints.length === 1) {
     return {
       latitude: validPoints[0].latitude,
@@ -190,6 +207,7 @@ export function getMapRegionForPoints(points = [], fallbackPoint = null) {
     };
   }
 
+  // Multiple points: calculate a region that fits the whole set.
   if (validPoints.length > 1) {
     const latitudes = validPoints.map((point) => point.latitude);
     const longitudes = validPoints.map((point) => point.longitude);
@@ -207,6 +225,7 @@ export function getMapRegionForPoints(points = [], fallbackPoint = null) {
     };
   }
 
+  // If there are no usable route points, fall back to one known point if available.
   if (fallback) {
     return {
       latitude: fallback.latitude,
@@ -216,6 +235,7 @@ export function getMapRegionForPoints(points = [], fallbackPoint = null) {
     };
   }
 
+  // Final fallback used when no location data exists at all.
   return map.defaultRegion;
 }
 
@@ -224,5 +244,6 @@ export function getPlaceLocationText(place = {}) {
     return place.placeName;
   }
 
+  // If no full place name exists, build one from city and country.
   return [place.city, place.country].filter(Boolean).join(", ");
 }

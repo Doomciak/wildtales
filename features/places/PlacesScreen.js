@@ -26,6 +26,7 @@ import {
   getPlaceLocationText,
 } from "../../utils/travel";
 
+// Screen for browsing saved places either as a list or on the map.
 export default function PlacesScreen({
   places,
   totalPlaces,
@@ -48,19 +49,24 @@ export default function PlacesScreen({
   const [viewMode, setViewMode] = useState("list");
   const [previewPlace, setPreviewPlace] = useState(null);
 
+  // Network state is used to decide whether the map can be shown.
   const networkState = Network.useNetworkState();
   const isOffline =
     networkState.isConnected === false ||
     networkState.isInternetReachable === false;
 
+  // Count how many filter values are currently different from the default ones.
   const activeFilterCount =
     (selectedCountry !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0);
 
   const mapRegion = useMemo(() => {
+    // Only keep places that actually have coordinates.
     const validMapPlaces = mapPlaces.filter(
       (place) => place.latitude != null && place.longitude != null
     );
 
+    // Fallback point is used when there is only one valid place
+    // or when the region helper needs one main point to focus on.
     const fallbackPoint =
       validMapPlaces[0] &&
       validMapPlaces[0].latitude != null &&
@@ -79,6 +85,7 @@ export default function PlacesScreen({
     return getMapRegionForPoints(points, fallbackPoint);
   }, [mapPlaces]);
 
+  // Extra safety check before trying to render the map.
   const hasValidMapRegion = useMemo(() => {
     return Boolean(
       mapRegion &&
@@ -89,8 +96,11 @@ export default function PlacesScreen({
     );
   }, [mapRegion]);
 
+  // The map is only shown when the device is online,
+  // there are places to show, and the region values are valid.
   const canRenderMap = !isOffline && mapPlaces.length > 0 && hasValidMapRegion;
 
+  // Key changes when map markers change, which helps remount the map cleanly.
   const mapKey = useMemo(() => {
     return `places-map-${mapPlaces.map((place) => place.id).join("-") || "empty"}`;
   }, [mapPlaces]);
@@ -106,6 +116,7 @@ export default function PlacesScreen({
           subtitle="Browse your saved memories, open them quickly, or explore them on the map."
         />
 
+        {/* Switch between list view and map view */}
         <View style={styles.segmentWrap}>
           <Pressable
             style={[
@@ -194,6 +205,7 @@ export default function PlacesScreen({
             />
           ) : !canRenderMap ? (
             <>
+              {/* Fallback shown when map data exists but the map cannot be used */}
               <View style={styles.offlineMapCard}>
                 <Ionicons
                   name="cloud-offline-outline"
@@ -207,6 +219,7 @@ export default function PlacesScreen({
                 </Text>
               </View>
 
+              {/* Even without the map, the user can still open place previews from cards */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -252,6 +265,7 @@ export default function PlacesScreen({
             </>
           ) : (
             <>
+              {/* Main map view with markers for every place that has coordinates */}
               <View style={styles.mapWrapLarge}>
                 <MapView
                   key={mapKey}
@@ -275,6 +289,7 @@ export default function PlacesScreen({
                 </MapView>
               </View>
 
+              {/* Cards below the map make it easier to open and manage places */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -334,6 +349,7 @@ export default function PlacesScreen({
 
             return (
               <View key={place.id} style={styles.placeListCard}>
+                {/* Main card press opens the full place preview */}
                 <Pressable
                   style={styles.placeListMain}
                   onPress={() => setPreviewPlace(place)}
@@ -344,6 +360,7 @@ export default function PlacesScreen({
                       style={styles.placeListImage}
                     />
                   ) : (
+                    // If no image exists, use the first letter of the place title as fallback.
                     <View style={[styles.placeListImage, styles.placeListFallback]}>
                       <Text style={styles.placeListLetter}>
                         {String(place.title).charAt(0).toUpperCase()}
@@ -373,6 +390,7 @@ export default function PlacesScreen({
                       {place.note}
                     </Text>
 
+                    {/* Small pills for quick extra information */}
                     <View style={styles.placeListPills}>
                       {place.images?.length > 0 ? (
                         <InfoPill
@@ -399,6 +417,7 @@ export default function PlacesScreen({
                   </View>
                 </Pressable>
 
+                {/* Quick actions beside each place */}
                 <View style={styles.placeListActions}>
                   <ActionIconButton
                     icon="edit-2"
@@ -420,6 +439,7 @@ export default function PlacesScreen({
         )}
       </ScrollView>
 
+      {/* Preview modal for the currently selected place */}
       <PlacePreviewModal
         place={previewPlace}
         onClose={() => setPreviewPlace(null)}

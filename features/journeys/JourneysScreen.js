@@ -23,6 +23,9 @@ import {
   getRouteLocationLine,
 } from "../../utils/travel";
 
+// Helper to make sure journey images always end up as a clean array.
+// Some routes may already store images as an array,
+// while others may still have them as a JSON string.
 function getJourneyImages(route) {
   if (Array.isArray(route?.images)) {
     return route.images.filter(Boolean);
@@ -46,18 +49,23 @@ export default function JourneysScreen({
   onEditRoute,
   onAddJourneyPhotos,
 }) {
+  // Keeps track of which journey is currently opened in the preview modal.
   const [previewRoute, setPreviewRoute] = useState(null);
+
+  // Search and filter state used by the collection controls.
   const [search, setSearch] = useState("");
   const [showControls, setShowControls] = useState(false);
   const [selectedPhotoFilter, setSelectedPhotoFilter] = useState("All");
   const [selectedSort, setSelectedSort] = useState("Newest");
 
   const normalizedRoutes = useMemo(() => {
+    // First prepare the routes so each one has a reliable images array.
     const preparedRoutes = routes.map((route) => ({
       ...route,
       images: getJourneyImages(route),
     }));
 
+    // Apply search and photo filters before sorting.
     const filteredRoutes = preparedRoutes.filter((route) => {
       const query = search.trim().toLowerCase();
 
@@ -77,6 +85,7 @@ export default function JourneysScreen({
       return matchesSearch && matchesPhotoFilter;
     });
 
+    // Sort the filtered journeys based on the currently selected option.
     const sortedRoutes = [...filteredRoutes].sort((a, b) => {
       if (selectedSort === "Oldest") {
         return (
@@ -89,6 +98,7 @@ export default function JourneysScreen({
         return Number(b.distanceKm || 0) - Number(a.distanceKm || 0);
       }
 
+      // Newest is the default sort.
       return (
         new Date(b.endedAt || b.startedAt).getTime() -
         new Date(a.endedAt || a.startedAt).getTime()
@@ -98,6 +108,7 @@ export default function JourneysScreen({
     return sortedRoutes;
   }, [routes, search, selectedPhotoFilter, selectedSort]);
 
+  // Used to show how many filter or sort options are currently active.
   const activeControlCount =
     (selectedPhotoFilter !== "All" ? 1 : 0) +
     (selectedSort !== "Newest" ? 1 : 0);
@@ -115,8 +126,8 @@ export default function JourneysScreen({
         contentContainerStyle={styles.scrollContent}
       >
         <ScreenHeader
-          title="Routes"
-          subtitle="Keep the routes you completed and turn them into memories later."
+          title="Journeys"
+          subtitle="Keep the journeys you completed and turn them into memories."
           maxWidth={300}
         />
 
@@ -164,17 +175,20 @@ export default function JourneysScreen({
 
             return (
               <View key={route.id} style={styles.journeyCard}>
+                {/* Pressing the main card area opens the full journey preview */}
                 <Pressable
                   style={styles.journeyMain}
                   onPress={() => setPreviewRoute(route)}
                 >
                   <View style={styles.heroWrap}>
                     {snapshotUri ? (
+                      // Show the saved route snapshot when it exists.
                       <Image
                         source={{ uri: snapshotUri }}
                         style={styles.heroImage}
                       />
                     ) : (
+                      // Fallback shown when no snapshot has been saved for this journey.
                       <View style={styles.heroFallback}>
                         <Ionicons
                           name="trail-sign-outline"
@@ -187,6 +201,7 @@ export default function JourneysScreen({
                       </View>
                     )}
 
+                    {/* Quick summary pills placed over the image area */}
                     <View style={styles.heroBadgeRow}>
                       <InfoPill
                         icon="navigate-outline"
@@ -220,6 +235,7 @@ export default function JourneysScreen({
                     <View style={styles.journeyTitleWrap}>
                       <Text style={styles.journeyTitle}>{route.title}</Text>
 
+                      {/* Only show the location line when route location data exists */}
                       {routeLocationLine ? (
                         <Text style={styles.journeyLocationLine}>
                           {routeLocationLine}
@@ -236,6 +252,7 @@ export default function JourneysScreen({
                     {route.note || "Saved from your finished live route."}
                   </Text>
 
+                  {/* Extra route details repeated below the note for quick scanning */}
                   <View style={styles.journeyMetaRow}>
                     <InfoPill
                       icon="navigate-outline"
@@ -252,6 +269,7 @@ export default function JourneysScreen({
                   </View>
                 </Pressable>
 
+                {/* Row of direct actions for editing, adding photos, or deleting */}
                 <View style={styles.journeyActionRow}>
                   <Pressable
                     style={styles.secondaryAction}
@@ -298,6 +316,7 @@ export default function JourneysScreen({
         )}
       </ScrollView>
 
+      {/* Separate modal used to preview the currently selected route */}
       <JourneyPreviewModal
         route={previewRoute}
         onClose={() => setPreviewRoute(null)}

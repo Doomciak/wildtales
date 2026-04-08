@@ -31,6 +31,7 @@ import {
   getRouteLocationLine,
 } from "../../utils/travel";
 
+// Home screen showing the main overview of saved places and journeys.
 export default function HomeScreen({
   featuredPlace,
   recentPlaces,
@@ -48,6 +49,7 @@ export default function HomeScreen({
   onRemoveRoute,
   onAddJourneyPhotos,
 }) {
+  // These hold the currently selected items for the preview modals.
   const [previewPlace, setPreviewPlace] = useState(null);
   const [previewRoute, setPreviewRoute] = useState(null);
 
@@ -63,6 +65,7 @@ export default function HomeScreen({
           maxWidth={330}
         />
 
+        {/* Show a short live route summary when a route is currently linked to a place */}
         {activeRouteLink ? (
           <View style={styles.liveRouteStrip}>
             <View style={styles.inlineRow}>
@@ -83,6 +86,7 @@ export default function HomeScreen({
           </View>
         ) : null}
 
+        {/* Quick overview of how many places and routes have been saved */}
         <View style={styles.overviewStatsRow}>
           <View style={styles.overviewStatCard}>
             <Text style={styles.overviewStatNumber}>{totalPlaces}</Text>
@@ -95,6 +99,7 @@ export default function HomeScreen({
           </View>
         </View>
 
+        {/* Main shortcuts for adding a new place or opening the full places screen */}
         <View style={styles.quickActionsRow}>
           <Pressable style={styles.quickActionPrimary} onPress={onOpenAdd}>
             <Ionicons
@@ -117,6 +122,7 @@ export default function HomeScreen({
 
         {featuredPlace ? (
           <View style={styles.featuredHomeCard}>
+            {/* Tapping the featured card opens the place preview modal */}
             <Pressable onPress={() => setPreviewPlace(featuredPlace)}>
               {featuredPlace.coverImage ? (
                 <ImageBackground
@@ -148,6 +154,7 @@ export default function HomeScreen({
                   </View>
                 </ImageBackground>
               ) : (
+                // Fallback version when the featured place has no image.
                 <View style={styles.featuredHomeFallback}>
                   <Text style={styles.heroLabel}>Featured memory</Text>
                   <Text style={styles.heroTitleFallback}>
@@ -167,6 +174,7 @@ export default function HomeScreen({
               )}
             </Pressable>
 
+            {/* Quick actions for editing or deleting the featured place */}
             <View style={styles.overlayActionsRow}>
               <ActionIconButton
                 icon="edit-2"
@@ -197,6 +205,7 @@ export default function HomeScreen({
             <SectionHeader title="Latest journey" onPress={onOpenRoutes} />
 
             <View style={styles.latestJourneyCard}>
+              {/* Open the journey preview when the main card area is pressed */}
               <Pressable onPress={() => setPreviewRoute(latestRoute)}>
                 {latestRoute.snapshotUri ? (
                   <Image
@@ -204,6 +213,7 @@ export default function HomeScreen({
                     style={styles.latestJourneyHero}
                   />
                 ) : (
+                  // Fallback shown when the journey does not have a saved snapshot yet.
                   <View style={styles.latestJourneyFallback}>
                     <Ionicons
                       name="trail-sign-outline"
@@ -234,6 +244,7 @@ export default function HomeScreen({
                     </Text>
                   ) : null}
 
+                  {/* Main route details shown as pills for quick scanning */}
                   <View style={styles.journeyMetaRow}>
                     <InfoPill
                       icon="navigate-outline"
@@ -265,6 +276,7 @@ export default function HomeScreen({
                 </View>
               </Pressable>
 
+              {/* Quick actions for the latest journey */}
               <View style={styles.latestJourneyActions}>
                 <ActionIconButton
                   icon="edit-2"
@@ -306,6 +318,7 @@ export default function HomeScreen({
         ) : (
           recentRoutes.map((route) => (
             <View key={route.id} style={styles.homeMiniCard}>
+              {/* Pressing the main part of the card opens the route preview */}
               <Pressable
                 style={styles.homeMiniMain}
                 onPress={() => setPreviewRoute(route)}
@@ -343,6 +356,7 @@ export default function HomeScreen({
                 </View>
               </Pressable>
 
+              {/* Quick edit and delete actions beside each recent journey */}
               <View style={styles.homeMiniActions}>
                 <ActionIconButton
                   icon="edit-2"
@@ -375,6 +389,7 @@ export default function HomeScreen({
         ) : (
           recentPlaces.map((place) => (
             <View key={place.id} style={styles.homeMiniCard}>
+              {/* Pressing the main card area opens the place preview */}
               <Pressable
                 style={styles.homeMiniMain}
                 onPress={() => setPreviewPlace(place)}
@@ -385,6 +400,7 @@ export default function HomeScreen({
                     style={styles.homeMiniImage}
                   />
                 ) : (
+                  // If there is no image, use the first letter of the place title as fallback.
                   <View style={[styles.homeMiniImage, styles.homeMiniFallback]}>
                     <Text style={styles.homeMiniLetter}>
                       {String(place.title).charAt(0).toUpperCase()}
@@ -409,6 +425,7 @@ export default function HomeScreen({
                 </View>
               </Pressable>
 
+              {/* Quick edit and delete actions beside each recent place */}
               <View style={styles.homeMiniActions}>
                 <ActionIconButton
                   icon="edit-2"
@@ -427,6 +444,7 @@ export default function HomeScreen({
           ))
         )}
 
+        {/* Shortcut card linking to the journeys screen */}
         <Pressable style={styles.routesShortcutCard} onPress={onOpenRoutes}>
           <View style={styles.inlineRow}>
             <Ionicons
@@ -443,6 +461,7 @@ export default function HomeScreen({
         </Pressable>
       </ScrollView>
 
+      {/* Preview modal for the currently selected place */}
       <PlacePreviewModal
         place={previewPlace}
         onClose={() => setPreviewPlace(null)}
@@ -451,6 +470,7 @@ export default function HomeScreen({
         activeRouteLink={activeRouteLink}
       />
 
+      {/* Preview modal for the currently selected journey */}
       <JourneyPreviewModal
         route={previewRoute}
         onClose={() => setPreviewRoute(null)}

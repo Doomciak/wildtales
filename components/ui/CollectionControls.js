@@ -12,6 +12,7 @@ import { colors, shadows } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 import FilterChip from "./FilterChip";
 
+// Search and filter controls used above collection-style lists.
 export default function CollectionControls({
   search = "",
   onChangeSearch,
@@ -39,6 +40,7 @@ export default function CollectionControls({
             onChangeText={onChangeSearch}
           />
 
+          {/* Show a clear button only when there is something typed in the search field */}
           {search.trim() ? (
             <Pressable
               onPress={() => onChangeSearch?.("")}
@@ -51,6 +53,7 @@ export default function CollectionControls({
           ) : null}
         </View>
 
+        {/* This button opens or closes the extra filter and sorting panel */}
         <Pressable
           style={[
             styles.toggleButton,
@@ -66,6 +69,7 @@ export default function CollectionControls({
             color={showControls ? colors.textDark : colors.textSecondary}
           />
 
+          {/* If any filters or sort options are active, show the count on the button */}
           {activeCount > 0 ? (
             <View style={styles.countBadge}>
               <Text style={styles.countText}>{activeCount}</Text>
@@ -79,6 +83,7 @@ export default function CollectionControls({
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Filters & sort</Text>
 
+            {/* Clear button only appears when something is actually active */}
             {hasActiveControls ? (
               <Pressable
                 style={styles.clearButton}
@@ -91,6 +96,7 @@ export default function CollectionControls({
             ) : null}
           </View>
 
+          {/* Each section represents one filter or sort group */}
           {sections.map((section) => (
             <View key={section.key || section.title} style={styles.sectionBlock}>
               <Text style={styles.sectionLabel}>{section.title}</Text>
@@ -101,6 +107,7 @@ export default function CollectionControls({
                 contentContainerStyle={styles.chipsRow}
               >
                 {section.options.map((option) => {
+                  // Support both simple string options and object-based options.
                   const value =
                     typeof option === "object" ? option.value : option;
                   const label =
@@ -119,6 +126,7 @@ export default function CollectionControls({
             </View>
           ))}
 
+          {/* Optional short summary shown under the filter sections */}
           {summary ? <Text style={styles.summaryText}>{summary}</Text> : null}
         </View>
       ) : null}

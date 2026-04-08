@@ -8,7 +8,10 @@ import {
 import { colors } from "../../constants/theme";
 import { radius } from "../../constants/layout";
 
+// Helper used to render the correct icon component
+// depending on which icon library was passed in.
 function renderIcon(iconSet, icon, size, color) {
+  // If no icon was provided, do not render anything.
   if (!icon) {
     return null;
   }
@@ -21,6 +24,7 @@ function renderIcon(iconSet, icon, size, color) {
     return <MaterialCommunityIcons name={icon} size={size} color={color} />;
   }
 
+  // Ionicons is used as the default fallback.
   return <Ionicons name={icon} size={size} color={color} />;
 }
 
@@ -41,8 +45,11 @@ export default function InfoPill({
   const isAccent = variant === "accent";
   const isMuted = variant === "muted";
 
+  // If onPress exists, make the pill interactive.
+  // Otherwise it is just a normal View.
   const Container = onPress ? Pressable : View;
 
+  // Accent pills use darker text and icon colour for contrast.
   const iconColor = isAccent ? colors.textDark : colors.textSecondary;
   const labelColor = isAccent ? styles.textAccent : styles.textDefault;
 

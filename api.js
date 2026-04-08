@@ -10,6 +10,7 @@ export const API_BASE_URL =
 const REQUEST_TIMEOUT_MS = 10000;
 
 function buildApiUrl(path) {
+  // Build a clean final URL no matter how the base or path is written.
   const cleanBase = API_BASE_URL.replace(/\/+$/, "");
   const cleanPath = String(path || "").replace(/^\/+/, "");
   return `${cleanBase}/${cleanPath}`;
@@ -18,6 +19,7 @@ function buildApiUrl(path) {
 async function readResponseBody(response) {
   const contentType = response.headers.get("content-type") || "";
 
+  // Try JSON first when the API says it returned JSON.
   if (contentType.includes("application/json")) {
     try {
       return await response.json();
@@ -27,6 +29,7 @@ async function readResponseBody(response) {
     }
   }
 
+  // Otherwise fall back to plain text.
   try {
     return await response.text();
   } catch (error) {
@@ -53,6 +56,8 @@ async function apiRequest(path, options = {}) {
 
     const body = await readResponseBody(response);
 
+    // Turn non-2xx responses into normal JS errors
+    // so the calling code can handle them in one place.
     if (!response.ok) {
       const message =
         typeof body === "string"
@@ -64,6 +69,7 @@ async function apiRequest(path, options = {}) {
 
     return body;
   } catch (error) {
+    // Give timeout errors a clearer message.
     if (error?.name === "AbortError") {
       throw new Error("Request timed out");
     }
@@ -75,6 +81,7 @@ async function apiRequest(path, options = {}) {
 }
 
 function normaliseLocationLogPayload(log) {
+  // Keep the payload sent to the server small and consistent.
   return {
     tripId: log.tripId,
     latitude: log.latitude,
@@ -109,6 +116,7 @@ export async function syncPendingLocationLogs() {
   let sent = 0;
   let failed = 0;
 
+  // Try to resend every pending log one by one.
   for (const log of pendingLogs) {
     try {
       await sendLocationLogToApi(log);
@@ -130,6 +138,7 @@ export async function syncPendingLocationLogs() {
 
 export async function checkApiReachable() {
   try {
+    // Simple health check used to see whether the API responds at all.
     await apiRequest("/ping", {
       method: "GET",
     });

@@ -11,14 +11,20 @@ import { colors } from "../../../constants/theme";
 import { radius, spacing } from "../../../constants/layout";
 
 function ActionButton({ action, side }) {
+  // Keep the row layout balanced even when one side has no action.
   if (!action) {
     return (
       <View
-        style={[styles.button, side === "left" ? styles.leftGap : styles.rightGap]}
+        style={[
+          styles.button,
+          side === "left" ? styles.leftGap : styles.rightGap,
+        ]}
       />
     );
   }
 
+  // Read the button settings from the action object
+  // so the same component can be used for different modal actions.
   const {
     label,
     onPress,
@@ -30,10 +36,12 @@ function ActionButton({ action, side }) {
     accessibilityLabel,
   } = action;
 
+  // These flags make the conditional styling easier to read.
   const isAccent = variant === "accent";
   const isMuted = variant === "muted";
   const isDanger = variant === "danger";
 
+  // Combine the shared button style with the selected visual variant.
   const buttonStyle = [
     styles.button,
     side === "left" ? styles.leftGap : styles.rightGap,
@@ -43,6 +51,7 @@ function ActionButton({ action, side }) {
     disabled && styles.disabledButton,
   ];
 
+  // Match the text styling to the selected button variant.
   const textStyle = [
     styles.buttonText,
     isAccent && styles.accentButtonText,
@@ -50,6 +59,7 @@ function ActionButton({ action, side }) {
     isDanger && styles.dangerButtonText,
   ];
 
+  // Use a different spinner colour on accent buttons for contrast.
   const spinnerColor = isAccent ? colors.textDark : colors.textSecondary;
 
   return (
@@ -61,6 +71,7 @@ function ActionButton({ action, side }) {
       accessibilityLabel={accessibilityLabel || label}
     >
       {loading ? (
+        // Show a loader while the action is being processed.
         <ActivityIndicator size="small" color={spinnerColor} />
       ) : (
         <View style={styles.content}>
@@ -68,7 +79,10 @@ function ActionButton({ action, side }) {
             <Feather
               name={iconName}
               size={14}
-              color={iconColor || (isAccent ? colors.textDark : colors.textSecondary)}
+              color={
+                iconColor ||
+                (isAccent ? colors.textDark : colors.textSecondary)
+              }
               style={styles.icon}
             />
           ) : null}
@@ -82,6 +96,7 @@ function ActionButton({ action, side }) {
 
 export default function ModalActionRow({ leftAction, rightAction, style }) {
   return (
+    // Render both modal actions in a single horizontal row.
     <View style={[styles.row, style]}>
       <ActionButton action={leftAction} side="left" />
       <ActionButton action={rightAction} side="right" />

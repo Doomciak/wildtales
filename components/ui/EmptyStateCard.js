@@ -4,6 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 
+// Simple empty state card shown when there is no data to display.
 export default function EmptyStateCard({
   title,
   text,
@@ -14,6 +15,7 @@ export default function EmptyStateCard({
   return (
     <View style={[styles.card, style]}>
       <View style={styles.iconWrap}>
+        {/* Pick the icon component based on the icon set passed into the card */}
         {iconSet === "material-community" ? (
           <MaterialCommunityIcons
             name={icon}

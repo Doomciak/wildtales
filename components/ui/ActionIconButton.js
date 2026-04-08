@@ -3,6 +3,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { colors, shadows } from "../../constants/theme";
 
+// Small icon-only button used across the app for actions like edit, delete, or close.
 export default function ActionIconButton({
   icon,
   iconSet = "feather",
@@ -13,9 +14,12 @@ export default function ActionIconButton({
   style,
   disabled = false,
 }) {
+  // Use a darker icon on primary buttons for better contrast.
   const iconColor =
     variant === "primary" ? colors.textDark : colors.textSecondary;
 
+  // Build the final button style from the shared base,
+  // size values, visual variant, disabled state, and any extra style passed in.
   const buttonStyle = [
     styles.button,
     {
@@ -38,6 +42,7 @@ export default function ActionIconButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
+      {/* Switch between Ionicons and Feather depending on which icon set is requested */}
       {iconSet === "ionicons" ? (
         <Ionicons name={icon} size={16} color={iconColor} />
       ) : (
