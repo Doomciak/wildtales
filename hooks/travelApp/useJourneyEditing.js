@@ -10,6 +10,7 @@ import {
   persistDraftImages,
 } from "./helpers";
 
+// Manage editing, saving, and photo updates for saved journeys.
 export default function useJourneyEditing({ routes, loadRoutes }) {
   const [editingRoute, setEditingRoute] = useState(null);
   const [editingRouteTitle, setEditingRouteTitle] = useState("");
@@ -73,7 +74,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
     });
   }
 
-  // Remove one image from the current editing list after confirmation.
+  // Remove one image from the editing list after confirmation.
   function removeEditingImageAt(index) {
     if (index < 0) {
       return;
@@ -93,7 +94,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
     ]);
   }
 
-  // Remove all images from the current editing list after confirmation.
+  // Remove all images from the editing list after confirmation.
   function confirmRemoveAllEditingImages() {
     if (!editingRouteImages.length) {
       return;
@@ -109,7 +110,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
     ]);
   }
 
-  // Pick one or more images from the photo library for editing.
+  // Pick one or more images from the library for the journey being edited.
   async function pickEditingPhotosFromLibrary() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -123,7 +124,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: true,
         quality: 0.8,
         selectionLimit: 10,
@@ -150,7 +151,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -179,7 +180,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: false,
         quality: 0.8,
       });
@@ -204,7 +205,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -298,7 +299,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
     } catch (error) {
       console.log("Save route changes error:", error);
 
-      // Delete files copied during this failed save attempt.
+      // Remove files copied during a failed save attempt.
       deleteManagedFilesQuietly(newlyCopiedUris);
 
       Alert.alert("Save failed", "We could not update this journey.");
@@ -365,6 +366,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
     } catch (error) {
       console.log("Save journey photos error:", error);
 
+      // Remove copied files again if saving the added photos fails.
       deleteManagedFilesQuietly(newlyCopiedUris);
 
       Alert.alert("Photos error", "We could not save journey photos.");
@@ -385,7 +387,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: true,
         quality: 0.8,
         selectionLimit: 10,
@@ -412,7 +414,7 @@ export default function useJourneyEditing({ routes, loadRoutes }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,

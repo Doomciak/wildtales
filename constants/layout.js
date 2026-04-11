@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 
-// Shared spacing values used across the app
-// so padding and margins stay consistent.
+// Shared spacing values used across the app for consistent layout.
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -12,7 +11,7 @@ export const spacing = {
   xxxl: 28,
 };
 
-// Shared border radius values used for cards, buttons, and pills.
+// Shared border radius values for cards, buttons, and pills.
 export const radius = {
   sm: 12,
   md: 16,
@@ -24,8 +23,7 @@ export const radius = {
 };
 
 // Screen layout values shared across the app.
-// Some values change slightly on Android and iOS
-// to keep spacing and tab bar positioning looking right on both.
+// Some values are adjusted slightly per platform for more consistent spacing.
 export const screen = {
   topPadding: 68,
   bottomSpacing: Platform.OS === "android" ? 82 : 76,
@@ -36,7 +34,7 @@ export const screen = {
   tabBarSideInset: Platform.OS === "android" ? 16 : 18,
 };
 
-// Standard icon sizes so icons stay visually consistent.
+// Standard icon sizes to keep icons visually consistent.
 export const iconSizes = {
   xs: 12,
   sm: 14,
@@ -46,8 +44,7 @@ export const iconSizes = {
   xxl: 24,
 };
 
-// Shared map settings used for default view
-// and for zooming to one point or fallback locations.
+// Shared map settings for default regions and point-based fallbacks.
 export const map = {
   defaultRegion: {
     latitude: 54.5,

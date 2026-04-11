@@ -1,7 +1,7 @@
 import { managedMediaDirectory } from "./core";
 
-// Safely returns an array of non-empty strings from either
-// an existing array or a JSON string representation of one.
+// Return a cleaned array of non-empty strings from either
+// a real array or a JSON string version of one.
 export function safeJsonStringArray(value) {
   if (!value) {
     return [];
@@ -26,8 +26,8 @@ export function safeJsonStringArray(value) {
   }
 }
 
-// Safely returns an array from either an existing array
-// or a JSON string representation of one.
+// Return an array from either a real array
+// or a JSON string version of one.
 export function safeJsonArray(value) {
   if (!value) {
     return [];
@@ -45,30 +45,29 @@ export function safeJsonArray(value) {
   }
 }
 
-// Removes empty values, converts all entries to strings,
-// trims whitespace, and keeps only unique values.
+// Remove empty values, trim them, and keep only unique strings.
 export function uniqueStrings(values) {
   return [...new Set(values.filter(Boolean).map((value) => String(value).trim()))];
 }
 
-// Checks whether the given URI points to a local file.
+// Check whether the given URI points to a local file.
 export function isLocalFileUri(uri) {
   return typeof uri === "string" && uri.startsWith("file://");
 }
 
-// Checks whether the file URI belongs to the app's managed media folder.
+// Check whether the file URI belongs to the app's managed media folder.
 export function isManagedMediaUri(uri) {
   return isLocalFileUri(uri) && uri.startsWith(managedMediaDirectory.uri);
 }
 
-// Combines a single image value with an image array
-// and returns a cleaned list of unique image paths.
+// Combine a single image value with an image array
+// and return a cleaned list of unique image paths.
 export function normaliseIncomingImages(images, image) {
   const arrayImages = Array.isArray(images) ? images : safeJsonStringArray(images);
   return uniqueStrings([image, ...arrayImages]);
 }
 
-// Builds the image fields used when saving a record.
+// Build the image fields used when saving a record.
 export function buildImageFields(data = {}) {
   const imageUris = normaliseIncomingImages(data.images, data.image);
 
@@ -79,7 +78,7 @@ export function buildImageFields(data = {}) {
   };
 }
 
-// Returns all image file URIs associated with a place record.
+// Return all image file URIs associated with a place record.
 export function getPlaceFileUris(row) {
   if (!row) {
     return [];
@@ -88,7 +87,7 @@ export function getPlaceFileUris(row) {
   return uniqueStrings([row.image, ...safeJsonStringArray(row.images)]);
 }
 
-// Returns all file URIs associated with a route record,
+// Return all file URIs associated with a route record,
 // including the route snapshot and any attached images.
 export function getRouteFileUris(row) {
   if (!row) {
@@ -102,7 +101,7 @@ export function getRouteFileUris(row) {
   ]);
 }
 
-// Converts a raw database row into a structured place object.
+// Convert a raw database row into a structured place object.
 export function serialisePlaceRow(row) {
   if (!row) {
     return null;
@@ -125,7 +124,7 @@ export function serialisePlaceRow(row) {
   };
 }
 
-// Converts a raw database row into a structured route object.
+// Convert a raw database row into a structured route object.
 export function serialiseRouteRow(row) {
   if (!row) {
     return null;

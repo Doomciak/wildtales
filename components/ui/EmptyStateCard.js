@@ -15,7 +15,7 @@ export default function EmptyStateCard({
   return (
     <View style={[styles.card, style]}>
       <View style={styles.iconWrap}>
-        {/* Pick the icon component based on the icon set passed into the card */}
+        {/* Render the right icon component for the selected icon set. */}
         {iconSet === "material-community" ? (
           <MaterialCommunityIcons
             name={icon}

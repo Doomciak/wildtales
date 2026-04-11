@@ -38,13 +38,13 @@ export default function useSafetyTracking({
   const routeCoordsRef = useRef([]);
   const tripIdRef = useRef(null);
 
-  // Update both the local ref and state with the current trip id.
+  // Keep the trip id ref and state updated together.
   function setCurrentTripId(nextTripId) {
     tripIdRef.current = nextTripId;
     setTripId(nextTripId);
   }
 
-  // Update both the local ref and state with the current route coordinates.
+  // Keep the route coordinate ref and state updated together.
   function setRouteState(nextCoords) {
     routeCoordsRef.current = nextCoords;
     setRouteCoords(nextCoords);
@@ -55,7 +55,7 @@ export default function useSafetyTracking({
     tripIdRef.current = tripId;
   }, [tripId]);
 
-  // Keep the route coordinates ref in sync with state.
+  // Keep the route coordinate ref in sync with state.
   useEffect(() => {
     routeCoordsRef.current = routeCoords;
   }, [routeCoords]);
@@ -93,7 +93,7 @@ export default function useSafetyTracking({
     }
   }
 
-  // Start Expo background location updates if they are not running yet.
+  // Start Expo background location updates when they are not running yet.
   async function ensureBackgroundTrackingStarted() {
     try {
       const alreadyStarted = await Location.hasStartedLocationUpdatesAsync(
@@ -152,7 +152,7 @@ export default function useSafetyTracking({
     }
   }
 
-  // Reload the trip route and rebuild route coordinates from saved logs.
+  // Reload the current trip logs and rebuild the route coordinates.
   async function refreshRoute(currentTripId) {
     try {
       if (!currentTripId) {
@@ -267,7 +267,7 @@ export default function useSafetyTracking({
     setTripLogs((current) => [...current, savedLog]);
     await refreshLogs();
 
-    // Upload the saved log immediately when an upload handler is provided.
+    // Upload the saved log straight away when an upload handler is available.
     if (typeof onUploadLog === "function") {
       onUploadLog(savedLog)
         .then(() => refreshLogs())
@@ -310,7 +310,7 @@ export default function useSafetyTracking({
         } catch (error) {
           console.log("Watch callback error:", error);
 
-          // Pass the watcher error to the parent callback if provided.
+          // Pass watcher errors up when a parent handler is provided.
           if (typeof onWatchError === "function") {
             onWatchError(error);
           }

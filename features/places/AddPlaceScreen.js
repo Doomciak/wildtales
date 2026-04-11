@@ -35,8 +35,7 @@ export default function AddPlaceScreen({
   onClearLocation,
   isEditing,
 }) {
-  // Used to decide whether location details should be shown
-  // or whether the user still needs to fetch a location.
+  // Decide whether to show saved location details or the fetch button.
   const hasLocation = latitude != null && longitude != null;
 
   return (
@@ -84,8 +83,8 @@ export default function AddPlaceScreen({
           />
         </View>
 
-        {/* Shared image manager now handles add / replace / remove actions
-            so place photo editing behaves the same way as journeys. */}
+        {/* Reuse the shared image manager so place photo editing
+            works the same way as journey photo editing. */}
         <EditableImageManager
           label="Photos"
           images={images}
@@ -114,7 +113,7 @@ export default function AddPlaceScreen({
 
           {hasLocation ? (
             <View style={styles.locationCard}>
-              {/* Place name is shown only if a readable name was found. */}
+              {/* Show the resolved place name when one is available. */}
               {placeName ? (
                 <View style={styles.inlineRow}>
                   <Ionicons
@@ -126,7 +125,7 @@ export default function AddPlaceScreen({
                 </View>
               ) : null}
 
-              {/* Coordinates are kept visible even if there is no place name. */}
+              {/* Keep the saved coordinates visible even without a place name. */}
               <View style={styles.inlineRow}>
                 <Feather
                   name="crosshair"
@@ -144,7 +143,7 @@ export default function AddPlaceScreen({
                   onPress={onGetLocation}
                   disabled={locationLoading}
                 >
-                  {/* While refreshing location, show a loader instead of the icon. */}
+                  {/* Swap the icon for a loader while the location is refreshing. */}
                   {locationLoading ? (
                     <ActivityIndicator size="small" color={colors.textDark} />
                   ) : (
@@ -175,7 +174,7 @@ export default function AddPlaceScreen({
               </View>
             </View>
           ) : (
-            // If no location has been added yet, show one main button to fetch it.
+            // Show a single action to fetch the current location when none is saved yet.
             <Pressable
               style={styles.locationButton}
               onPress={onGetLocation}
@@ -200,7 +199,7 @@ export default function AddPlaceScreen({
         </View>
 
         <View style={styles.footer}>
-          {/* Cancel button is only shown in edit mode. */}
+          {/* Only show the cancel action while editing an existing place. */}
           {isEditing ? (
             <Pressable style={styles.secondaryButton} onPress={onCancel}>
               <Text style={styles.secondaryButtonText}>Cancel editing</Text>

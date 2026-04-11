@@ -6,11 +6,11 @@ import useJourneyEditing from "./travelApp/useJourneyEditing";
 import useFinishedTrip from "./travelApp/useFinishedTrip";
 
 export default function useTravelApp() {
-  // These stay here because they control the whole app shell.
+  // Keep app-level shell state here.
   const [showWelcome, setShowWelcome] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
 
-  // Main data loading, filtering, and derived travel state.
+  // Main travel data, filters, and derived state.
   const travelData = useTravelData();
 
   // Place form flow: add, edit, photos, and location.
@@ -22,13 +22,13 @@ export default function useTravelApp() {
     loadActiveRouteLink: travelData.loadActiveRouteLink,
   });
 
-  // Journey editing flow: rename, notes, photos, delete.
+  // Journey editing flow: title, note, photos, and delete.
   const journeyEditing = useJourneyEditing({
     routes: travelData.routes,
     loadRoutes: travelData.loadRoutes,
   });
 
-  // Finished trip modal flow.
+  // Finished trip save flow.
   const finishedTrip = useFinishedTrip({
     loadRoutes: travelData.loadRoutes,
     setActiveTab,

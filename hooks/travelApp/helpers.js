@@ -3,7 +3,7 @@ import { Directory, File, Paths } from "expo-file-system";
 import { MANAGED_MEDIA_FOLDER_NAME } from "../../db";
 import { getDistanceKm, getPathDistanceKm } from "../../utils/travel";
 
-// Parse the stored images field into a clean images array.
+// Parse the stored images field into a clean image array.
 export function parseImages(imagesValue, legacyImage) {
   let parsedImages = [];
 
@@ -64,7 +64,7 @@ export function parseRoutePoints(routePointsValue) {
   return [];
 }
 
-// Read city and country values from a place object.
+// Read city and country details from a place object.
 function getPlaceDetails(place) {
   const savedCity = typeof place?.city === "string" ? place.city.trim() : "";
   const savedCountry =
@@ -182,7 +182,7 @@ export function buildActiveRouteLink(places, tripLogs) {
     }
   });
 
-  // Try a text match if the nearest place is still too far away.
+  // Fall back to a text match if the nearest place is still too far away.
   if (!matchedPlace || nearestDistanceKm > 25) {
     const latestPlaceText = String(latestLog.placeName || "").toLowerCase();
 
@@ -273,7 +273,7 @@ function buildManagedImageName(uri, index = 0, prefix = "image") {
   return `${prefix}-${timestamp}-${index}-${randomPart}${extension}`;
 }
 
-// Delete one managed file if it exists.
+// Delete one managed file if it still exists.
 export function deleteManagedFileQuietly(uri) {
   try {
     if (!uri || !isManagedAppImageUri(uri)) {
@@ -331,7 +331,7 @@ export async function persistDraftImages(imageUris = [], prefix = "place") {
   const newlyCopiedUris = [];
   const cache = new Map();
 
-  // Copy only files that are not already managed by the app.
+  // Only copy files that are not already managed by the app.
   for (let index = 0; index < uniqueUris.length; index += 1) {
     const uri = uniqueUris[index];
 

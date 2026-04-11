@@ -1,6 +1,6 @@
 import { dbPromise } from "./core";
 
-// Retrieves the most recently saved safety contact from the database.
+// Return the most recently saved safety contact.
 export async function getSafetyContact() {
   const db = await dbPromise;
   const rows = await db.getAllAsync(
@@ -10,7 +10,7 @@ export async function getSafetyContact() {
   return rows[0] || null;
 }
 
-// Replaces the current safety contact with the newly provided one.
+// Replace the current safety contact with the newly selected one.
 export async function saveSafetyContact(contact) {
   const db = await dbPromise;
 

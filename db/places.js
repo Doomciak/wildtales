@@ -7,7 +7,7 @@ import {
 import { deleteUnusedManagedUris } from "./media";
 import { createPendingSyncEntry } from "./sync";
 
-// Retrieves all saved places from the database, ordered from newest to oldest.
+// Return all saved places from newest to oldest.
 export async function getAllPlaces() {
   const db = await dbPromise;
 
@@ -31,12 +31,12 @@ export async function getAllPlaces() {
   );
 }
 
-// Saves a new place or updates an existing one, and records the change for syncing.
+// Save a new place or update an existing one, then queue the change for sync.
 export async function savePlaceToDb(place, editingId = null) {
   const db = await dbPromise;
   const { image, imagesJson, imageUris } = buildImageFields(place);
 
-  // Update the existing place if an editing id is provided.
+  // Update the existing place when an editing id is provided.
   if (editingId) {
     const existingPlace = await db.getFirstAsync(
       `SELECT
@@ -102,7 +102,7 @@ export async function savePlaceToDb(place, editingId = null) {
       country: place.country || null,
     };
 
-    // Adds an update entry so the edited place can be synced later.
+    // Queue the update so it can be synced later.
     await createPendingSyncEntry({
       entityType: "place",
       entityId: editingId,
@@ -112,7 +112,7 @@ export async function savePlaceToDb(place, editingId = null) {
 
     const removedUris = oldUris.filter((uri) => !imageUris.includes(uri));
 
-    // Removes old managed files if they are no longer used anywhere else.
+    // Remove old managed files if nothing else still references them.
     await deleteUnusedManagedUris(removedUris, [
       { table: "places", id: editingId },
     ]);
@@ -120,7 +120,7 @@ export async function savePlaceToDb(place, editingId = null) {
     return editingId;
   }
 
-  // Insert a new place if no editing id was provided.
+  // Insert a new place when no editing id was provided.
   const result = await db.runAsync(
     `INSERT INTO places (
       title,
@@ -149,7 +149,7 @@ export async function savePlaceToDb(place, editingId = null) {
 
   const placeId = result.lastInsertRowId;
 
-  // Adds a create entry so the new place can be synced later.
+  // Queue the create action so the new place can be synced later.
   await createPendingSyncEntry({
     entityType: "place",
     entityId: placeId,
@@ -171,8 +171,7 @@ export async function savePlaceToDb(place, editingId = null) {
   return placeId;
 }
 
-// Deletes a place, removes its link from related routes,
-// and clears unused managed files.
+// Delete a place, unlink any related routes, and clean up unused managed files.
 export async function deletePlaceFromDb(id) {
   const db = await dbPromise;
 
@@ -204,7 +203,7 @@ export async function deletePlaceFromDb(id) {
 
   await db.runAsync("DELETE FROM places WHERE id = ?", id);
 
-  // Clears the place link from routes that were connected to the deleted place.
+  // Clear the place link from any routes that pointed to this place.
   await db.runAsync(
     `UPDATE routes
      SET linkedPlaceId = NULL,
@@ -213,7 +212,7 @@ export async function deletePlaceFromDb(id) {
     id
   );
 
-  // Adds a delete entry so the removal can be synced later.
+  // Queue the delete action so the removal can be synced later.
   await createPendingSyncEntry({
     entityType: "place",
     entityId: id,
@@ -221,6 +220,6 @@ export async function deletePlaceFromDb(id) {
     payload: serialisePlaceRow(existingPlace),
   });
 
-  // Removes files that are no longer referenced after deletion.
+  // Remove files that are no longer referenced after deletion.
   await deleteUnusedManagedUris(imageUris);
 }

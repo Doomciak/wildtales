@@ -23,8 +23,7 @@ function ActionButton({ action, side }) {
     );
   }
 
-  // Read the button settings from the action object
-  // so the same component can be used for different modal actions.
+  // Pull the button settings from the action object so this stays reusable.
   const {
     label,
     onPress,
@@ -96,7 +95,6 @@ function ActionButton({ action, side }) {
 
 export default function ModalActionRow({ leftAction, rightAction, style }) {
   return (
-    // Render both modal actions in a single horizontal row.
     <View style={[styles.row, style]}>
       <ActionButton action={leftAction} side="left" />
       <ActionButton action={rightAction} side="right" />

@@ -18,7 +18,7 @@ function buildApiUrl(path) {
 async function readResponseBody(response) {
   const contentType = response.headers.get("content-type") || "";
 
-  // Try JSON first when the API says it returned JSON.
+  // Try JSON first when the API says the response is JSON.
   if (contentType.includes("application/json")) {
     try {
       return await response.json();
@@ -115,7 +115,7 @@ export async function syncPendingLocationLogs() {
   let sent = 0;
   let failed = 0;
 
-  // Try to resend every pending log one by one.
+  // Try to resend each pending log one by one.
   for (const log of pendingLogs) {
     try {
       await sendLocationLogToApi(log);
@@ -137,7 +137,7 @@ export async function syncPendingLocationLogs() {
 
 export async function checkApiReachable() {
   try {
-    // Simple health check used to see whether the API responds at all.
+    // Simple health check to confirm the API responds at all.
     await apiRequest("/ping", {
       method: "GET",
     });

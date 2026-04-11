@@ -31,7 +31,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
   const [updatesMessage, setUpdatesMessage] = useState("");
   const [nowTimestamp, setNowTimestamp] = useState(Date.now());
 
-  // Handle route tracking, location watchers, and route refresh logic.
+  // Handle live tracking, watchers, and route refresh logic.
   const tracking = useSafetyTracking({
     tripActive,
     tripId,
@@ -49,7 +49,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
     },
   });
 
-  // Handle upload retries, background sync checks, and SMS fallback logic.
+  // Handle retries, silent sync checks, and SMS fallback logic.
   const fallback = useSafetyFallback({
     contact,
     tripActive,
@@ -231,7 +231,7 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
           : "Trip started. Live route is tracking. To improve tracking when the phone is locked or in your pocket, allow background location on Android."
       );
 
-      // Capture the first point and start the live location watcher.
+      // Capture the first point and start the live watcher.
       await tracking.captureImmediateTripPoint(newTripId);
       await tracking.beginWatching(newTripId);
       await tracking.refreshLogs();
@@ -269,7 +269,16 @@ export default function useSafetyTrip({ onTripFinished } = {}) {
         tripLogs,
         routeCoords,
       });
-      const finishedTrip = baseSummary ? { ...baseSummary, ...extraData } : null;
+
+      // Keep the finished trip linked to its raw trip logs
+      // so they can be cleaned up after the journey is saved.
+      const finishedTrip = baseSummary
+        ? {
+            ...baseSummary,
+            tripId: currentTripId,
+            ...extraData,
+          }
+        : null;
 
       tracking.stopWatchingOnly();
       fallback.stopAutoCheckOnly();

@@ -1,13 +1,13 @@
 import { dbPromise } from "./core";
 import { ensureManagedMediaDirectory } from "./media";
 
-// Retrieves the column names currently defined for a table.
+// Return the column names currently defined for a table.
 async function getTableColumnNames(db, tableName) {
   const columns = await db.getAllAsync(`PRAGMA table_info(${tableName})`);
   return columns.map((column) => column.name);
 }
 
-// Adds any missing columns to an existing table.
+// Add any missing columns to an existing table.
 async function ensureColumns(db, tableName, columns) {
   const existingColumns = await getTableColumnNames(db, tableName);
 
@@ -21,8 +21,8 @@ async function ensureColumns(db, tableName, columns) {
   }
 }
 
-// Creates the database tables and indexes if they do not already exist,
-// then ensures that newer columns are available in older database versions.
+// Create the database tables and indexes if they do not already exist,
+// then make sure older local databases still get any newer columns.
 export async function setupDatabase() {
   const db = await dbPromise;
 
@@ -139,7 +139,7 @@ export async function setupDatabase() {
     ON pending_sync(entityType, entityId);
   `);
 
-  // Ensures the places table includes all fields used by the current version of the app.
+  // Make sure the places table includes all fields used by the current app version.
   await ensureColumns(db, "places", [
     ["placeName", "TEXT"],
     ["image", "TEXT"],
@@ -153,14 +153,14 @@ export async function setupDatabase() {
     ["lastSyncedAt", "TEXT"],
   ]);
 
-  // Ensures trip session records support syncing information.
+  // Make sure trip sessions include the fields needed for syncing.
   await ensureColumns(db, "trip_sessions", [
     ["syncStatus", "TEXT NOT NULL DEFAULT 'pending'"],
     ["remoteId", "TEXT"],
     ["lastSyncedAt", "TEXT"],
   ]);
 
-  // Ensures location logs include delivery tracking and sync-related fields.
+  // Make sure location logs include delivery tracking and sync fields.
   await ensureColumns(db, "location_logs", [
     ["sendStatus", "TEXT NOT NULL DEFAULT 'pending'"],
     ["sendAttempts", "INTEGER NOT NULL DEFAULT 0"],
@@ -171,7 +171,7 @@ export async function setupDatabase() {
     ["lastSyncedAt", "TEXT"],
   ]);
 
-  // Ensures the routes table includes all route, image, and sync fields.
+  // Make sure routes include all route, image, and sync-related fields.
   await ensureColumns(db, "routes", [
     ["title", "TEXT"],
     ["note", "TEXT"],
@@ -195,7 +195,7 @@ export async function setupDatabase() {
     ["lastSyncedAt", "TEXT"],
   ]);
 
-  // Ensures the sync queue table includes all fields needed for pending operations.
+  // Make sure the sync queue includes all fields needed for pending operations.
   await ensureColumns(db, "pending_sync", [
     ["entityType", "TEXT"],
     ["entityId", "INTEGER"],
@@ -208,6 +208,6 @@ export async function setupDatabase() {
     ["updatedAt", "TEXT"],
   ]);
 
-  // Ensures the managed media folder exists before the app stores image files.
+  // Make sure the managed media folder exists before image files are stored.
   await ensureManagedMediaDirectory();
 }

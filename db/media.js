@@ -9,7 +9,7 @@ import {
   uniqueStrings,
 } from "./helpers";
 
-// Ensures that the managed media folder exists before files are saved into it.
+// Make sure the managed media folder exists before saving files into it.
 export async function ensureManagedMediaDirectory() {
   if (!managedMediaDirectory.exists) {
     managedMediaDirectory.create({
@@ -21,7 +21,7 @@ export async function ensureManagedMediaDirectory() {
   return managedMediaDirectory;
 }
 
-// Deletes a local file if the provided URI points to a valid local file.
+// Delete a local file when the URI points to a valid local path.
 export async function deleteLocalFile(uri) {
   if (!isLocalFileUri(uri)) {
     return;
@@ -38,8 +38,8 @@ export async function deleteLocalFile(uri) {
   }
 }
 
-// Checks whether a file is still referenced by any place or route record.
-// Records passed in ignoredRecords are excluded from the check.
+// Check whether a file is still referenced by any place or route record.
+// Any records listed in ignoredRecords are skipped during the check.
 export async function isFileStillReferenced(db, uri, ignoredRecords = []) {
   if (!uri) {
     return false;
@@ -78,7 +78,7 @@ export async function isFileStillReferenced(db, uri, ignoredRecords = []) {
   return false;
 }
 
-// Deletes managed media files only if they are no longer referenced in the database.
+// Delete managed media files only when they are no longer referenced in the database.
 export async function deleteUnusedManagedUris(uris, ignoredRecords = []) {
   const db = await dbPromise;
 
@@ -95,7 +95,7 @@ export async function deleteUnusedManagedUris(uris, ignoredRecords = []) {
   }
 }
 
-// Recursively collects all file URIs stored inside the managed media folder.
+// Recursively collect all file URIs stored inside the managed media folder.
 async function listManagedMediaFilesRecursive(directory = managedMediaDirectory) {
   if (!directory.exists) {
     return [];
@@ -119,13 +119,13 @@ async function listManagedMediaFilesRecursive(directory = managedMediaDirectory)
   return uniqueStrings(uris);
 }
 
-// Returns the URI of the managed media folder.
+// Return the URI of the managed media folder.
 export function getManagedMediaDirectoryUri() {
   return managedMediaDirectory.uri;
 }
 
-// Produces a summary of image storage usage by comparing
-// database references with files stored locally.
+// Build a storage summary by comparing database references
+// with files currently stored on the device.
 export async function getImageStorageAudit() {
   await ensureManagedMediaDirectory();
   const db = await dbPromise;
@@ -198,7 +198,7 @@ export async function getImageStorageAudit() {
   };
 }
 
-// Removes orphaned managed files and returns the audit data
+// Remove orphaned managed files and return the audit data
 // together with the number of deleted files.
 export async function cleanupManagedOrphanFiles() {
   const audit = await getImageStorageAudit();

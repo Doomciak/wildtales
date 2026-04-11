@@ -20,18 +20,18 @@ export async function isDeviceOffline() {
   }
 }
 
-// Decide whether the automatic SMS fallback should be opened for a log.
+// Decide whether the automatic SMS fallback should open for a log.
 export function shouldOpenAutoText(log) {
   if (!log) {
     return false;
   }
 
-  // Do not open the fallback if the log was already sent successfully.
+  // Skip the fallback when the log was already sent successfully.
   if (log.sendStatus === "sent") {
     return false;
   }
 
-  // Do not open the fallback again if SMS was already used.
+  // Skip it again if SMS was already used for this log.
   if (log.sentVia === "sms") {
     return false;
   }
@@ -39,7 +39,7 @@ export function shouldOpenAutoText(log) {
   const failedAttempts = Number(log.sendAttempts || 0);
   const ageMs = Date.now() - new Date(log.recordedAt).getTime();
 
-  // Open the fallback when the upload failed several times
+  // Open the fallback after several failed uploads
   // or when the log has been pending for too long.
   return failedAttempts >= 3 || ageMs >= AUTO_SMS_MAX_AGE_MS;
 }
@@ -78,20 +78,20 @@ export function getStatusIcon(log) {
   return "clock";
 }
 
-// Build a summary object from the recorded trip logs and route points.
+// Build a finished trip summary from the recorded logs and route points.
 export function buildFinishedTripSummary({ tripLogs, routeCoords }) {
   // Keep only logs that contain valid coordinates.
   const validTripLogs = tripLogs.filter(
     (log) => log.latitude != null && log.longitude != null
   );
 
-  // Stop if there are no valid points to build a trip from.
+  // Stop early when there are no valid points to build from.
   if (!validTripLogs.length) {
     return null;
   }
 
-  // Use the provided route coordinates if available.
-  // Otherwise, build the route from the saved logs.
+  // Prefer the provided route coordinates when available.
+  // Otherwise, rebuild the route from the saved logs.
   const coords =
     routeCoords.length > 0
       ? routeCoords
@@ -114,11 +114,11 @@ export function buildFinishedTripSummary({ tripLogs, routeCoords }) {
     Math.round((endedAt - startedAt) / 60000)
   );
 
-  // Build readable start and end place names for the saved journey.
+  // Build readable start and end labels for the saved journey.
   const startPlaceName = firstLog.placeName || "Starting point";
   const endPlaceName = lastLog.placeName || startPlaceName || "Tracked journey";
 
-  // Return the finished trip data in the format used by the journey form.
+  // Return the finished trip data in the shape used by the journey form.
   return {
     title: buildJourneyTitleFromTrip(startPlaceName, endPlaceName),
     note: "",

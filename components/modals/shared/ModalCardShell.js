@@ -3,12 +3,11 @@ import { StyleSheet, View } from "react-native";
 import { colors } from "../../../constants/theme";
 import { radius, spacing } from "../../../constants/layout";
 
-// This wraps modal content in a dark overlay
-// and places it inside a styled card container.
+// Reusable shell for centered modal content with a dark background overlay.
 export default function ModalCardShell({ children, overlayStyle, cardStyle }) {
   return (
     <View style={[styles.overlay, overlayStyle]}>
-      {/* Card area where the modal content is rendered */}
+      {/* Main card container for the modal body. */}
       <View style={[styles.card, cardStyle]}>{children}</View>
     </View>
   );

@@ -17,13 +17,13 @@ import {
 // Name of the Expo background task used for location tracking.
 export const BACKGROUND_LOCATION_TASK = "wildtales-background-location-task";
 
-// Store the last saved point in memory to avoid saving duplicates.
+// Keep the last saved point in memory to avoid duplicate logs.
 let lastBackgroundPoint = null;
 
-// Store the current trip id so the point cache can reset when the trip changes.
+// Track the current trip so the cached point resets when the trip changes.
 let lastBackgroundTripId = null;
 
-// Try to send a saved location log to the API.
+// Try to upload a saved log to the API.
 // If it fails, increase the retry counter in the database.
 async function tryUploadLog(log) {
   try {
@@ -35,26 +35,26 @@ async function tryUploadLog(log) {
   }
 }
 
-// Register the background task that receives location updates from Expo.
+// Register the Expo background task that receives location updates.
 TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
-  // Stop the task early if Expo returns a task error.
+  // Stop early if Expo reports a task error.
   if (error) {
     console.log("Background location task error:", error);
     return;
   }
 
   try {
-    // Read the currently active trip from the local database.
+    // Read the active trip session from local storage.
     const activeTrip = await getActiveTripSession();
 
-    // Reset cached values when there is no active trip.
+    // Clear cached values when there is no active trip.
     if (!activeTrip?.id) {
       lastBackgroundTripId = null;
       lastBackgroundPoint = null;
       return;
     }
 
-    // Reset the last saved point when a new trip starts.
+    // Reset the cached point when a new trip starts.
     if (lastBackgroundTripId !== activeTrip.id) {
       lastBackgroundTripId = activeTrip.id;
       lastBackgroundPoint = null;
@@ -63,15 +63,15 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
     // Get all location updates included in this background task run.
     const locations = data?.locations ?? [];
 
-    // Process each received location update one by one.
+    // Process each received location update one at a time.
     for (const location of locations) {
-      // Build a simplified point object from the raw Expo location data.
+      // Build a simplified point from the raw Expo location data.
       const nextPoint = getCleanPointFromCoords(
         location?.coords,
         location?.timestamp || Date.now()
       );
 
-      // Skip the point if it should not be stored.
+      // Skip points that do not meet the save rules.
       if (!shouldKeepPoint(lastBackgroundPoint, nextPoint)) {
         continue;
       }
@@ -79,7 +79,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
       // Update the cached last saved point.
       lastBackgroundPoint = nextPoint;
 
-      // Convert the coordinates into a readable place name.
+      // Try to convert the coordinates into a readable place name.
       const placeName = await buildPlaceNameFromCoords(
         nextPoint.latitude,
         nextPoint.longitude,
@@ -91,7 +91,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
         location?.timestamp || Date.now()
       ).toISOString();
 
-      // Save the location log in the local database.
+      // Save the location log locally first.
       const newLogId = await saveLocationLog({
         tripId: activeTrip.id,
         latitude: nextPoint.latitude,
@@ -100,7 +100,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
         recordedAt,
       });
 
-      // Build the saved log object in the format expected by the API.
+      // Build the saved log in the format expected by the API.
       const savedLog = buildPendingLocationLog({
         id: newLogId,
         tripId: activeTrip.id,
@@ -110,11 +110,11 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
         recordedAt,
       });
 
-      // Try to upload the saved log to the backend.
+      // Then try to upload the saved log to the backend.
       await tryUploadLog(savedLog);
     }
   } catch (taskError) {
-    // Catch unexpected errors during the task run.
+    // Catch any unexpected error during the task run.
     console.log("Background location task run error:", taskError);
   }
 });

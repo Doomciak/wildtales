@@ -8,8 +8,7 @@ import {
 import { deleteUnusedManagedUris } from "./media";
 import { createPendingSyncEntry } from "./sync";
 
-// Retrieves all saved routes from the database,
-// ordered by the most recent route activity.
+// Return all saved routes, ordered by the most recent route activity.
 export async function getAllRoutes() {
   const db = await dbPromise;
 
@@ -41,8 +40,7 @@ export async function getAllRoutes() {
   );
 }
 
-// Saves a new route or updates an existing one,
-// and records the change for later syncing.
+// Save a new route or update an existing one, then queue the change for sync.
 export async function saveRouteToDb(route, editingId = null) {
   const db = await dbPromise;
   const { image, imagesJson, imageUris } = buildImageFields(route);
@@ -50,7 +48,7 @@ export async function saveRouteToDb(route, editingId = null) {
   const routePointsJson = JSON.stringify(route.routePoints || []);
   const nextFileUris = uniqueStrings([snapshotUri, ...imageUris]);
 
-  // Update the existing route if an editing id is provided.
+  // Update the existing route when an editing id is provided.
   if (editingId) {
     const existingRoute = await db.getFirstAsync(
       `SELECT
@@ -127,7 +125,7 @@ export async function saveRouteToDb(route, editingId = null) {
       editingId
     );
 
-    // Adds an update entry so the edited route can be synced later.
+    // Queue the update so the edited route can be synced later.
     await createPendingSyncEntry({
       entityType: "route",
       entityId: editingId,
@@ -156,7 +154,7 @@ export async function saveRouteToDb(route, editingId = null) {
 
     const removedUris = oldUris.filter((uri) => !nextFileUris.includes(uri));
 
-    // Removes old managed files if they are no longer used.
+    // Remove old managed files if nothing else still uses them.
     await deleteUnusedManagedUris(removedUris, [
       { table: "routes", id: editingId },
     ]);
@@ -164,7 +162,7 @@ export async function saveRouteToDb(route, editingId = null) {
     return editingId;
   }
 
-  // Insert a new route if no editing id was provided.
+  // Insert a new route when no editing id was provided.
   const result = await db.runAsync(
     `INSERT INTO routes (
       title,
@@ -209,7 +207,7 @@ export async function saveRouteToDb(route, editingId = null) {
 
   const routeId = result.lastInsertRowId;
 
-  // Adds a create entry so the new route can be synced later.
+  // Queue the create action so the new route can be synced later.
   await createPendingSyncEntry({
     entityType: "route",
     entityId: routeId,
@@ -239,8 +237,7 @@ export async function saveRouteToDb(route, editingId = null) {
   return routeId;
 }
 
-// Updates the place linked to a route
-// and records the change for syncing.
+// Update the place linked to a route and queue the change for sync.
 export async function updateRouteLinkedPlace(routeId, placeId) {
   const db = await dbPromise;
 
@@ -288,8 +285,7 @@ export async function updateRouteLinkedPlace(routeId, placeId) {
   }
 }
 
-// Deletes a route, records the deletion for syncing,
-// and removes files that are no longer used.
+// Delete a route, queue the deletion for sync, and clean up unused files.
 export async function deleteRouteFromDb(id) {
   const db = await dbPromise;
 

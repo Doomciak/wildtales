@@ -29,6 +29,7 @@ import {
 } from "./safetyConfig";
 import { isDeviceOffline, shouldOpenAutoText } from "./safetyHelpers";
 
+// Handle retrying uploads and SMS fallback during an active safety trip.
 export default function useSafetyFallback({
   contact,
   tripActive,
@@ -53,7 +54,7 @@ export default function useSafetyFallback({
   // Keep track of logs that already triggered the SMS fallback.
   const autoSmsTriggeredIdsRef = useRef(new Set());
 
-  // Prevent overlapping auto-maintenance runs.
+  // Prevent overlapping automatic maintenance runs.
   const autoMaintenanceBusyRef = useRef(false);
 
   // Prevent overlapping sync requests.
@@ -62,7 +63,7 @@ export default function useSafetyFallback({
   useEffect(() => {
     stopAutoCheckOnly();
 
-    // Start the automatic maintenance interval while a trip is active.
+    // Start the maintenance interval while a trip is active.
     if (tripActive && tripId) {
       autoCheckRef.current = setInterval(() => {
         runAutoMaintenance();
@@ -92,13 +93,13 @@ export default function useSafetyFallback({
     setSmsFallbackTestActive(false);
   }
 
-  // Reset fallback-related state.
+  // Reset all fallback-related state.
   function resetFallbackState() {
     autoSmsTriggeredIdsRef.current.clear();
     stopFallbackTestOnly();
   }
 
-  // Only count another retry when enough time has passed since the last one.
+  // Only allow another retry when enough time has passed since the last one.
   function shouldRetryLogNow(log) {
     if (!log) {
       return false;
@@ -123,7 +124,7 @@ export default function useSafetyFallback({
     return Date.now() - lastAttemptMs >= AUTO_RETRY_INTERVAL_MS;
   }
 
-  // Mark pending logs as failed when the phone has no usable data connection.
+  // Mark pending logs as failed when there is no usable data connection.
   async function markPendingLogsBlockedByOffline(logs) {
     const pendingLogs = Array.isArray(logs) ? logs : [];
     let markedCount = 0;
@@ -148,7 +149,7 @@ export default function useSafetyFallback({
     return markedCount;
   }
 
-  // Upload one log to the API and update its send status.
+  // Upload one log to the API and update its send state.
   async function uploadSingleLog(log) {
     const offline = await isDeviceOffline();
 
@@ -270,7 +271,7 @@ export default function useSafetyFallback({
         return;
       }
 
-      // Find the newest pending log that meets the fallback conditions.
+      // Find the newest pending log that now meets the fallback rules.
       const fallbackLog = [...pendingLogs]
         .reverse()
         .find(
@@ -306,7 +307,7 @@ export default function useSafetyFallback({
     }
   }
 
-  // Run background maintenance for pending uploads and SMS fallback checks.
+  // Run the background maintenance cycle for uploads and SMS fallback checks.
   async function runAutoMaintenance() {
     if (autoMaintenanceBusyRef.current) {
       return;
@@ -324,7 +325,7 @@ export default function useSafetyFallback({
     }
   }
 
-  // Retry sending pending logs and update the status message.
+  // Retry pending uploads and refresh the user-facing status message.
   async function retryPendingUploads() {
     if (retryingUploads || syncBusyRef.current) {
       return;
@@ -376,12 +377,12 @@ export default function useSafetyFallback({
     }
   }
 
-  // Open an SMS using the most useful available location log.
+  // Open an SMS using the best available location log.
   async function sendLatestLocationSms() {
     try {
       let latestLog = null;
 
-      // Read the latest pending log for the active trip first.
+      // Start with the latest pending log for the active trip.
       if (tripActive && tripId) {
         latestLog = await getLatestPendingLocationLogForTrip(tripId);
       }
@@ -391,12 +392,12 @@ export default function useSafetyFallback({
         latestLog = await getLatestPendingLocationLog();
       }
 
-      // Fall back to the latest saved log.
+      // Fall back again to the latest saved log.
       if (!latestLog) {
         latestLog = await getLatestLocationLog();
       }
 
-      // Fall back to the device's last known location if no log exists yet.
+      // Use the device's last known location if no log exists yet.
       if (!latestLog) {
         const fallback = await Location.getLastKnownPositionAsync({
           maxAge: 1000 * 60 * 30,
@@ -431,7 +432,7 @@ export default function useSafetyFallback({
     }
   }
 
-  // Start a test that forces the SMS fallback after a short delay.
+  // Start a short test that forces the SMS fallback after a delay.
   async function triggerSmsFallbackTest() {
     try {
       if (smsFallbackTestActive) {
@@ -476,7 +477,7 @@ export default function useSafetyFallback({
           return;
         }
 
-        // Add the point to the current route if it passes the point checks.
+        // Add the point to the current route when it passes the point checks.
         const nextRouteCoords = appendMeaningfulCoordinate(
           routeCoordsRef.current,
           nextPoint

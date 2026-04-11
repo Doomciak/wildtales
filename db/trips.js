@@ -1,7 +1,7 @@
 import { dbPromise, nowIso } from "./core";
 import { createPendingSyncEntry } from "./sync";
 
-// Retrieves the currently active trip session, if one exists.
+// Return the currently active trip session, if one exists.
 export async function getActiveTripSession() {
   const db = await dbPromise;
   const rows = await db.getAllAsync(
@@ -22,7 +22,7 @@ export async function getActiveTripSession() {
   return rows[0] || null;
 }
 
-// Starts a new trip session and adds it to the sync queue.
+// Start a new trip session and queue it for syncing.
 export async function startTripSession() {
   const db = await dbPromise;
 
@@ -58,7 +58,7 @@ export async function startTripSession() {
   return tripId;
 }
 
-// Stops an active trip session and records the change for syncing.
+// Stop an active trip session and queue the update for syncing.
 export async function stopTripSession(tripId) {
   const db = await dbPromise;
   const endedAt = nowIso();
@@ -97,7 +97,7 @@ export async function stopTripSession(tripId) {
   }
 }
 
-// Saves a new location log for the current trip.
+// Save a new location log for the current trip.
 export async function saveLocationLog(log) {
   const db = await dbPromise;
 
@@ -126,7 +126,22 @@ export async function saveLocationLog(log) {
   return result.lastInsertRowId;
 }
 
-// Marks a location log as successfully sent.
+// Delete all saved location logs for one trip.
+export async function deleteLocationLogsForTrip(tripId) {
+  if (!tripId) {
+    return;
+  }
+
+  const db = await dbPromise;
+
+  await db.runAsync(
+    `DELETE FROM location_logs
+     WHERE tripId = ?`,
+    tripId
+  );
+}
+
+// Mark a location log as successfully sent.
 export async function markLocationLogSent(id, via = "api") {
   const db = await dbPromise;
   const timestamp = nowIso();
@@ -146,7 +161,7 @@ export async function markLocationLogSent(id, via = "api") {
   );
 }
 
-// Marks a location log as prepared for SMS sending.
+// Mark a location log as prepared for SMS sending.
 export async function markLocationLogSmsPrepared(id) {
   const db = await dbPromise;
 
@@ -160,7 +175,7 @@ export async function markLocationLogSmsPrepared(id) {
   );
 }
 
-// Increases the send attempt count after a failed delivery attempt.
+// Increase the send attempt count after a failed delivery attempt.
 export async function incrementLocationLogAttempt(id) {
   const db = await dbPromise;
 
@@ -175,7 +190,7 @@ export async function incrementLocationLogAttempt(id) {
   );
 }
 
-// Retrieves all location logs that have not been sent successfully.
+// Return all location logs that have not been sent successfully.
 export async function getPendingLocationLogs() {
   const db = await dbPromise;
 
@@ -200,7 +215,7 @@ export async function getPendingLocationLogs() {
   );
 }
 
-// Retrieves unsent location logs for a specific trip.
+// Return unsent location logs for a specific trip.
 export async function getPendingLocationLogsForTrip(tripId) {
   const db = await dbPromise;
 
@@ -227,7 +242,7 @@ export async function getPendingLocationLogsForTrip(tripId) {
   );
 }
 
-// Retrieves the most recent location log.
+// Return the most recent location log.
 export async function getLatestLocationLog() {
   const db = await dbPromise;
   const rows = await db.getAllAsync(
@@ -253,7 +268,7 @@ export async function getLatestLocationLog() {
   return rows[0] || null;
 }
 
-// Retrieves the most recent location log that has not been sent successfully.
+// Return the most recent location log that has not been sent successfully.
 export async function getLatestPendingLocationLog() {
   const db = await dbPromise;
   const rows = await db.getAllAsync(
@@ -280,7 +295,7 @@ export async function getLatestPendingLocationLog() {
   return rows[0] || null;
 }
 
-// Retrieves the most recent unsent location log for a specific trip.
+// Return the most recent unsent location log for a specific trip.
 export async function getLatestPendingLocationLogForTrip(tripId) {
   const db = await dbPromise;
   const rows = await db.getAllAsync(
@@ -309,7 +324,7 @@ export async function getLatestPendingLocationLogForTrip(tripId) {
   return rows[0] || null;
 }
 
-// Retrieves the ten most recent location logs.
+// Return the ten most recent location logs.
 export async function getRecentLocationLogs() {
   const db = await dbPromise;
 
@@ -334,7 +349,7 @@ export async function getRecentLocationLogs() {
   );
 }
 
-// Retrieves all location logs recorded for a specific trip.
+// Return all location logs recorded for a specific trip.
 export async function getLocationLogsForTrip(tripId) {
   const db = await dbPromise;
 

@@ -11,39 +11,38 @@ export default function WildMarker({
   size = 34,
   onPress,
 }) {
-  // This controls whether the marker view should still be tracked by the map.
-  // It is turned on briefly when something changes so the custom SVG updates properly.
+  // Keep marker updates on briefly so the custom SVG refreshes properly.
+  // After that, turn them off again to avoid extra map re-renders.
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
   useEffect(() => {
-    // Re-enable tracking when marker position or size changes.
+    // Re-enable view tracking whenever the marker moves or its size changes.
     setTracksViewChanges(true);
 
-    // After a short delay, turn it off again to avoid unnecessary re-renders
-    // and improve map performance.
+    // Turn tracking back off after a short delay for better performance.
     const timeout = setTimeout(() => {
       setTracksViewChanges(false);
     }, 800);
 
-    // Clean up the timeout if the component updates again or gets removed.
+    // Clear the timeout if the marker updates again or unmounts.
     return () => clearTimeout(timeout);
   }, [coordinate?.latitude, coordinate?.longitude, size]);
 
   return (
     <Marker
-      coordinate={coordinate} // location where the marker should appear
-      title={title} // optional title shown by the map
-      description={description} // optional extra text for the marker
-      onPress={onPress} // runs when the marker is tapped
-      tracksViewChanges={tracksViewChanges} // keeps SVG refreshing only when needed
-      anchor={{ x: 0.5, y: 0.92 }} // makes the bottom of the icon point to the exact spot
+      coordinate={coordinate}
+      title={title}
+      description={description}
+      onPress={onPress}
+      tracksViewChanges={tracksViewChanges}
+      // Position the marker so the tip of the icon matches the map location.
+      anchor={{ x: 0.5, y: 0.92 }}
     >
-      {/* Wrapper keeps the custom marker at the right size */}
+      {/* Fixed wrapper helps the custom SVG render at the correct size. */}
       <View
         style={[styles.markerWrap, { width: size, height: size }]}
         collapsable={false}
       >
-        {/* Custom SVG used instead of the default map pin */}
         <TrackingMarker width={size} height={size} />
       </View>
     </Marker>

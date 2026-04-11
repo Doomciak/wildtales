@@ -1,3 +1,4 @@
+// Configure Metro so SVG files can be imported as React components.
 const { getDefaultConfig } = require("expo/metro-config");
 
 module.exports = (() => {

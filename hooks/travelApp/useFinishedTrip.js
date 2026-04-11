@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
-import { saveRouteToDb } from "../../db";
+import { deleteLocationLogsForTrip, saveRouteToDb } from "../../db";
 import {
   buildJourneyTitleFromTrip,
   formatDistanceKm,
@@ -16,6 +16,7 @@ import {
   persistSingleDraftFile,
 } from "./helpers";
 
+// Manage the finished-trip draft before it is saved as a journey.
 export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
   const [finishedTripDraft, setFinishedTripDraft] = useState(null);
   const [finishedTripTitle, setFinishedTripTitle] = useState("");
@@ -155,7 +156,7 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
     ]);
   }
 
-  // Pick one or more photos from the photo library.
+  // Pick one or more photos from the library.
   async function pickFinishedTripPhotosFromLibrary() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -169,7 +170,7 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: true,
         quality: 0.8,
         selectionLimit: 10,
@@ -196,7 +197,7 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -225,7 +226,7 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: false,
         quality: 0.8,
       });
@@ -250,7 +251,7 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -309,6 +310,7 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
 
     let newSnapshotUri = null;
     let newlyCopiedImageUris = [];
+    let routeSaved = false;
 
     try {
       setSavingTripChoice(true);
@@ -340,35 +342,48 @@ export default function useFinishedTrip({ loadRoutes, setActiveTab }) {
         images: persistedImages.stableUris,
       });
 
+      routeSaved = true;
+
+      // Remove the raw tracking logs once the final journey was saved.
+      if (finishedTripDraft.tripId) {
+        try {
+          await deleteLocationLogsForTrip(finishedTripDraft.tripId);
+        } catch (error) {
+          console.log("Delete finished trip logs error:", error);
+        }
+      }
+
       await loadRoutes();
       closeFinishedTripModal();
       setActiveTab("journeys");
     } catch (error) {
       console.log("Save finished trip as journey error:", error);
 
-      // Delete files copied during this save attempt if the save fails.
-      if (newSnapshotUri) {
-        deleteManagedFileQuietly(newSnapshotUri);
-      }
+      // Remove files copied during this save attempt if the route was not saved.
+      if (!routeSaved) {
+        if (newSnapshotUri) {
+          deleteManagedFileQuietly(newSnapshotUri);
+        }
 
-      deleteManagedFilesQuietly(newlyCopiedImageUris);
+        deleteManagedFilesQuietly(newlyCopiedImageUris);
+      }
 
       Alert.alert("Save failed", "We could not save this journey.");
       setSavingTripChoice(false);
     }
   }
 
-  // Build the formatted distance text for the draft summary.
+  // Build the formatted distance text shown in the draft summary.
   const finishedTripDistanceText = finishedTripDraft
     ? formatDistanceKm(Number(finishedTripDraft.distanceKm || 0))
     : "";
 
-  // Build the formatted duration text for the draft summary.
+  // Build the formatted duration text shown in the draft summary.
   const finishedTripDurationText = finishedTripDraft
     ? formatDuration(Number(finishedTripDraft.durationMinutes || 0))
     : "";
 
-  // Build the formatted location line for the draft summary.
+  // Build the formatted location line shown in the draft summary.
   const finishedTripLocationLine = finishedTripDraft
     ? getRouteLocationLine(finishedTripDraft)
     : "";

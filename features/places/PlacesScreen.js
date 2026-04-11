@@ -18,7 +18,7 @@ import CollectionControls from "../../components/ui/CollectionControls";
 import EmptyStateCard from "../../components/ui/EmptyStateCard";
 import InfoPill from "../../components/ui/InfoPill";
 import ScreenHeader from "../../components/ui/ScreenHeader";
-import { colors, shadows } from "../../constants/theme";
+import { colors } from "../../constants/theme";
 import { radius, screen, spacing } from "../../constants/layout";
 import {
   formatDistanceKm,
@@ -49,13 +49,13 @@ export default function PlacesScreen({
   const [viewMode, setViewMode] = useState("list");
   const [previewPlace, setPreviewPlace] = useState(null);
 
-  // Network state is used to decide whether the map can be shown.
+  // Use network state to decide whether the map can be shown safely.
   const networkState = Network.useNetworkState();
   const isOffline =
     networkState.isConnected === false ||
     networkState.isInternetReachable === false;
 
-  // Count how many filter values are currently different from the default ones.
+  // Count how many filters are currently different from their default values.
   const activeFilterCount =
     (selectedCountry !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0);
 
@@ -65,8 +65,7 @@ export default function PlacesScreen({
       (place) => place.latitude != null && place.longitude != null
     );
 
-    // Fallback point is used when there is only one valid place
-    // or when the region helper needs one main point to focus on.
+    // Use the first valid place as a fallback focus point when needed.
     const fallbackPoint =
       validMapPlaces[0] &&
       validMapPlaces[0].latitude != null &&
@@ -85,7 +84,7 @@ export default function PlacesScreen({
     return getMapRegionForPoints(points, fallbackPoint);
   }, [mapPlaces]);
 
-  // Extra safety check before trying to render the map.
+  // Extra check before trying to mount the map.
   const hasValidMapRegion = useMemo(() => {
     return Boolean(
       mapRegion &&
@@ -96,11 +95,10 @@ export default function PlacesScreen({
     );
   }, [mapRegion]);
 
-  // The map is only shown when the device is online,
-  // there are places to show, and the region values are valid.
+  // Only render the map when the device is online and the region is usable.
   const canRenderMap = !isOffline && mapPlaces.length > 0 && hasValidMapRegion;
 
-  // Key changes when map markers change, which helps remount the map cleanly.
+  // Change the map key when markers change so the map can remount cleanly.
   const mapKey = useMemo(() => {
     return `places-map-${mapPlaces.map((place) => place.id).join("-") || "empty"}`;
   }, [mapPlaces]);
@@ -116,7 +114,6 @@ export default function PlacesScreen({
           subtitle="Browse your saved memories, open them quickly, or explore them on the map."
         />
 
-        {/* Switch between list view and map view */}
         <View style={styles.segmentWrap}>
           <Pressable
             style={[
@@ -205,7 +202,7 @@ export default function PlacesScreen({
             />
           ) : !canRenderMap ? (
             <>
-              {/* Fallback shown when map data exists but the map cannot be used */}
+              {/* Fall back to an offline message when map data exists but the map cannot be used. */}
               <View style={styles.offlineMapCard}>
                 <Ionicons
                   name="cloud-offline-outline"
@@ -219,7 +216,7 @@ export default function PlacesScreen({
                 </Text>
               </View>
 
-              {/* Even without the map, the user can still open place previews from cards */}
+              {/* Keep place cards available so previews still work without the map. */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -265,7 +262,7 @@ export default function PlacesScreen({
             </>
           ) : (
             <>
-              {/* Main map view with markers for every place that has coordinates */}
+              {/* Show markers for every place that has valid coordinates. */}
               <View style={styles.mapWrapLarge}>
                 <MapView
                   key={mapKey}
@@ -289,7 +286,7 @@ export default function PlacesScreen({
                 </MapView>
               </View>
 
-              {/* Cards below the map make it easier to open and manage places */}
+              {/* Keep matching cards below the map for quick preview and actions. */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -349,7 +346,7 @@ export default function PlacesScreen({
 
             return (
               <View key={place.id} style={styles.placeListCard}>
-                {/* Main card press opens the full place preview */}
+                {/* Open the full place preview when the main card area is pressed. */}
                 <Pressable
                   style={styles.placeListMain}
                   onPress={() => setPreviewPlace(place)}
@@ -360,7 +357,7 @@ export default function PlacesScreen({
                       style={styles.placeListImage}
                     />
                   ) : (
-                    // If no image exists, use the first letter of the place title as fallback.
+                    // Fall back to the first letter of the place title when no image exists.
                     <View style={[styles.placeListImage, styles.placeListFallback]}>
                       <Text style={styles.placeListLetter}>
                         {String(place.title).charAt(0).toUpperCase()}
@@ -390,7 +387,7 @@ export default function PlacesScreen({
                       {place.note}
                     </Text>
 
-                    {/* Small pills for quick extra information */}
+                    {/* Show a few compact pills for photos or linked live route info. */}
                     <View style={styles.placeListPills}>
                       {place.images?.length > 0 ? (
                         <InfoPill
@@ -417,7 +414,6 @@ export default function PlacesScreen({
                   </View>
                 </Pressable>
 
-                {/* Quick actions beside each place */}
                 <View style={styles.placeListActions}>
                   <ActionIconButton
                     icon="edit-2"
@@ -439,7 +435,6 @@ export default function PlacesScreen({
         )}
       </ScrollView>
 
-      {/* Preview modal for the currently selected place */}
       <PlacePreviewModal
         place={previewPlace}
         onClose={() => setPreviewPlace(null)}

@@ -14,6 +14,7 @@ import {
   buildRouteForUi,
 } from "./helpers";
 
+// Load and prepare the main travel data used across the app.
 export default function useTravelData() {
   const [places, setPlaces] = useState([]);
   const [routes, setRoutes] = useState([]);
@@ -40,7 +41,7 @@ export default function useTravelData() {
     return () => clearInterval(interval);
   }, [places]);
 
-  // Set up the database, clean orphaned files, and load initial data.
+  // Set up the database, clean orphaned files, and load the initial data.
   async function initialiseApp() {
     try {
       await setupDatabase();
@@ -87,7 +88,7 @@ export default function useTravelData() {
     }
   }
 
-  // Build the current active trip link from trip logs and saved places.
+  // Build the active trip link from current trip logs and saved places.
   async function loadActiveRouteLink(placesOverride = null) {
     try {
       const activeTrip = await getActiveTripSession();
@@ -114,7 +115,7 @@ export default function useTravelData() {
     }
   }
 
-  // Build UI-ready place objects from the raw place rows.
+  // Convert raw place rows into UI-ready place objects.
   const placesWithDetails = useMemo(() => {
     return places.map(buildPlaceForUi);
   }, [places]);
@@ -148,14 +149,14 @@ export default function useTravelData() {
     return ["All", ...uniqueCities];
   }, [placesWithDetails, selectedCountry]);
 
-  // Reset the selected country if it is no longer available.
+  // Reset the selected country when it is no longer available.
   useEffect(() => {
     if (!countries.includes(selectedCountry)) {
       setSelectedCountry("All");
     }
   }, [countries, selectedCountry]);
 
-  // Reset the selected city if it is no longer available.
+  // Reset the selected city when it is no longer available.
   useEffect(() => {
     if (!cities.includes(selectedCity)) {
       setSelectedCity("All");
@@ -200,10 +201,10 @@ export default function useTravelData() {
     });
   }, [routes]);
 
-  // Read the latest saved route.
+  // Keep the most recent route ready for the home screen.
   const latestRoute = routesSorted[0] || null;
 
-  // Read the three most recent routes.
+  // Keep a short list of recent routes for quick preview.
   const recentRoutes = routesSorted.slice(0, 3);
 
   // Check whether any place filters are currently active.

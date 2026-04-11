@@ -7,14 +7,14 @@ import { radius, spacing } from "../../constants/layout";
 export default function FilterChip({ label, active, onPress }) {
   return (
     <Pressable
-      // Change the chip style when this option is currently selected.
+      // Highlight the chip when this option is selected.
       style={[styles.filterChip, active && styles.filterChipActive]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
       <Text
-        // Text colour also changes to match the active state.
+        // Match the text colour to the active state.
         style={[styles.filterChipText, active && styles.filterChipTextActive]}
       >
         {label}

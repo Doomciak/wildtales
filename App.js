@@ -133,7 +133,7 @@ function AppContent() {
     clearForm,
   } = useTravelApp();
 
-  // Use safe area values so the floating tab bar sits above device navigation.
+  // Use safe-area values so the floating tab bar stays above device navigation.
   const safeBottomInset = insets.bottom;
   const tabBarBottomOffset = Math.max(safeBottomInset, 8) + 8;
   const contentBottomPadding =
@@ -149,7 +149,7 @@ function AppContent() {
     );
   }
 
-  // The welcome screen is shown only at app entry before the main navigation.
+  // Show the welcome screen only before entering the main app.
   if (showWelcome) {
     return <WelcomeScreen onContinue={() => setShowWelcome(false)} />;
   }
@@ -158,7 +158,6 @@ function AppContent() {
     <View style={styles.screen}>
       <StatusBar style="light" />
 
-      {/* Main screen content changes depending on the currently selected tab. */}
       <View style={[styles.content, { paddingBottom: contentBottomPadding }]}>
         {activeTab === "home" ? (
           <HomeScreen
@@ -196,7 +195,7 @@ function AppContent() {
             selectedCountry={selectedCountry}
             selectedCity={selectedCity}
             onSelectCountry={(value) => {
-              // Reset city when country changes so filters stay consistent.
+              // Reset city when country changes so the filters stay consistent.
               setSelectedCountry(value);
               setSelectedCity("All");
             }}
@@ -242,7 +241,6 @@ function AppContent() {
         )}
       </View>
 
-      {/* Floating bottom navigation used to switch between the main app sections. */}
       <View
         style={[
           styles.tabBarWrap,
@@ -288,7 +286,7 @@ function AppContent() {
             icon="add-circle-outline"
             isActive={activeTab === "add"}
             onPress={() => {
-              // If the user is switching into Add, clear old draft data first.
+              // Clear any old draft when switching into Add from another tab.
               if (activeTab !== "add") {
                 clearForm();
               }
@@ -298,7 +296,7 @@ function AppContent() {
         </View>
       </View>
 
-      {/* This modal appears after finishing a tracked trip so it can be saved as a journey. */}
+      {/* Open after a tracked trip finishes so it can be saved as a journey. */}
       <SaveTripModal
         visible={saveTripModalVisible}
         saving={savingTripChoice}
@@ -318,7 +316,7 @@ function AppContent() {
         onSaveJourney={saveFinishedTripAsJourney}
       />
 
-      {/* Separate modal used when editing an already saved journey. */}
+      {/* Open when editing an already saved journey. */}
       <EditJourneyModal
         visible={Boolean(editingRoute)}
         savingRouteEdit={savingRouteEdit}
@@ -339,7 +337,6 @@ function AppContent() {
 }
 
 export default function App() {
-  // SafeAreaProvider makes inset values available across the app.
   return (
     <SafeAreaProvider>
       <AppContent />

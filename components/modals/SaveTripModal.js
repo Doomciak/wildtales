@@ -10,8 +10,7 @@ import InfoPill from "../ui/InfoPill";
 import { colors } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 
-// Modal used when the user finishes a live route
-// and wants to save it as a journey.
+// Modal shown after a live trip ends so it can be saved as a journey.
 export default function SaveTripModal({
   visible,
   saving,
@@ -35,7 +34,7 @@ export default function SaveTripModal({
       visible={visible}
       transparent
       animationType="fade"
-      // Prevent closing while the save action is still in progress.
+      // Prevent the modal from closing while the save is still in progress.
       onRequestClose={saving ? undefined : onClose}
     >
       <ModalCardShell>
@@ -51,7 +50,7 @@ export default function SaveTripModal({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          {/* Short summary of the route before saving it. */}
+          {/* Show a quick summary of the finished trip before it is saved. */}
           <View style={styles.summaryCard}>
             <View style={styles.statsWrap}>
               <InfoPill
@@ -68,7 +67,7 @@ export default function SaveTripModal({
               />
             </View>
 
-            {/* Show location details only if they exist. */}
+            {/* Only show the location line when route location details are available. */}
             {locationLine ? (
               <View style={styles.locationRow}>
                 <Ionicons
@@ -81,7 +80,6 @@ export default function SaveTripModal({
             ) : null}
           </View>
 
-          {/* Title entered by the user for the saved journey. */}
           <ModalTextField
             label="Journey title"
             value={tripTitle}
@@ -90,7 +88,6 @@ export default function SaveTripModal({
             editable={!saving}
           />
 
-          {/* Optional note added to the saved journey. */}
           <ModalTextField
             label="Journey note"
             value={tripNote}
@@ -100,8 +97,8 @@ export default function SaveTripModal({
             multiline
           />
 
-          {/* The same shared photo manager is used here too,
-              so the user can clean up journey photos before the first save. */}
+          {/* Reuse the shared photo manager here so images can be adjusted
+              before the journey is saved for the first time. */}
           <EditableImageManager
             label="Journey photos"
             images={tripImages}

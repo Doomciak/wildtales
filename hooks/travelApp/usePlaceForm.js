@@ -11,6 +11,7 @@ import {
   persistDraftImages,
 } from "./helpers";
 
+// Manage the place form, image handling, and location helpers.
 export default function usePlaceForm({
   places,
   setActiveTab,
@@ -106,7 +107,7 @@ export default function usePlaceForm({
     } catch (error) {
       console.log("Save place error:", error);
 
-      // Delete files copied during this failed save attempt.
+      // Remove files copied during a failed save attempt.
       deleteManagedFilesQuietly(newlyCopiedUris);
 
       Alert.alert("Save failed", "We could not save this place.");
@@ -169,7 +170,7 @@ export default function usePlaceForm({
     });
   }
 
-  // Pick one or more images from the photo library.
+  // Pick one or more images from the library.
   async function pickFromLibrary() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -183,7 +184,7 @@ export default function usePlaceForm({
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: true,
         quality: 0.8,
         selectionLimit: 10,
@@ -210,7 +211,7 @@ export default function usePlaceForm({
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -239,7 +240,7 @@ export default function usePlaceForm({
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: false,
         quality: 0.8,
       });
@@ -264,7 +265,7 @@ export default function usePlaceForm({
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -373,7 +374,7 @@ export default function usePlaceForm({
         console.log("Current position error:", error);
       }
 
-      // Fall back to the most recent known position when needed.
+      // Fall back to the last known position when needed.
       if (!position) {
         position = await Location.getLastKnownPositionAsync({
           maxAge: 1000 * 60 * 30,

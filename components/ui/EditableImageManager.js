@@ -62,15 +62,15 @@ export default function EditableImageManager({
       >
         {coverImage ? (
           <>
-            {/* Render the main preview image. */}
+            {/* Show the first selected image as the main stage preview. */}
             <Image source={{ uri: coverImage }} style={styles.imageStageImage} />
 
-            {/* Show the edit icon on the main preview. */}
+            {/* Small badge to hint that the main image can be edited. */}
             <View style={styles.stageTopRightBadge}>
               <Feather name="edit-2" size={15} color={colors.textDark} />
             </View>
 
-            {/* Show the current number of selected images. */}
+            {/* Keep the total photo count visible on the main preview. */}
             <View style={styles.stageBottomLeftBadge}>
               <Feather name="image" size={12} color={colors.textPrimary} />
               <Text style={styles.stageBottomLeftBadgeText}>
@@ -80,12 +80,12 @@ export default function EditableImageManager({
           </>
         ) : (
           <>
-            {/* Show the add icon when no images are selected. */}
+            {/* Show an add shortcut when no images have been selected yet. */}
             <View style={styles.stageTopRightBadge}>
               <Feather name="plus" size={16} color={colors.textDark} />
             </View>
 
-            {/* Render the empty state. */}
+            {/* Empty state used before the first image is added. */}
             <View style={styles.emptyState}>
               <View style={styles.emptyStateIconWrap}>
                 <Ionicons
@@ -104,7 +104,7 @@ export default function EditableImageManager({
 
       {safeImages.length > 0 ? (
         <>
-          {/* Render buttons for adding more images or removing all images. */}
+          {/* Extra actions stay outside the main stage for quicker photo management. */}
           <View style={styles.actionRow}>
             <Pressable
               style={[styles.actionChip, disabled && styles.disabledSurface]}
@@ -139,7 +139,7 @@ export default function EditableImageManager({
             </Pressable>
           </View>
 
-          {/* Render thumbnail previews for all selected images. */}
+          {/* Thumbnails let each image be managed without affecting the others. */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -152,7 +152,7 @@ export default function EditableImageManager({
                 <View key={`${uri}-${index}`} style={styles.thumbCard}>
                   <Image source={{ uri }} style={styles.thumbImage} />
 
-                  {/* Mark the first image as the cover image. */}
+                  {/* The first image is treated as the cover image. */}
                   {isCover ? (
                     <View style={styles.coverPill}>
                       <Text style={styles.coverPillText}>{coverLabel}</Text>
@@ -169,7 +169,7 @@ export default function EditableImageManager({
                       accessibilityRole="button"
                       accessibilityLabel={`Replace photo ${index + 1}`}
                     >
-                      {/* Replace the selected image. */}
+                      {/* Replace just this one image. */}
                       <Feather
                         name="refresh-cw"
                         size={13}
@@ -189,7 +189,7 @@ export default function EditableImageManager({
                       accessibilityRole="button"
                       accessibilityLabel={`Remove photo ${index + 1}`}
                     >
-                      {/* Remove the selected image. */}
+                      {/* Remove just this one image. */}
                       <Feather name="x" size={14} color={colors.textDark} />
                     </Pressable>
                   </View>
@@ -198,7 +198,7 @@ export default function EditableImageManager({
             })}
           </ScrollView>
 
-          {/* Show helper text below the image list. */}
+          {/* Short hint to explain how the image controls work. */}
           <Text style={styles.helperText}>{helperText}</Text>
         </>
       ) : null}

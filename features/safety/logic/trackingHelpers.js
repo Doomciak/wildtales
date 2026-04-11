@@ -1,15 +1,15 @@
 import * as Location from "expo-location";
 
-// Maximum GPS accuracy value accepted when creating a point.
+// Maximum GPS accuracy accepted when creating a point.
 export const MAX_ACCEPTED_ACCURACY_METERS = 35;
 
-// Minimum distance required between two points.
+// Minimum distance required between two saved points.
 export const MIN_POINT_DISTANCE_METERS = 10;
 
 // Maximum accepted speed used to ignore unrealistic jumps.
 export const MAX_JUMP_SPEED_METERS_PER_SECOND = 20;
 
-// Maximum time allowed for reverse geocoding before using a fallback label.
+// Maximum time allowed for reverse geocoding before falling back to coordinates.
 export const PLACE_NAME_TIMEOUT_MS = 1500;
 
 // Format coordinates into a readable text label.
@@ -52,12 +52,12 @@ export function getCleanPointFromCoords(coords, timestamp = Date.now()) {
   const longitude = Number(coords?.longitude);
   const accuracy = Number(coords?.accuracy);
 
-  // Stop if the coordinates are missing or invalid.
+  // Stop when the coordinates are missing or invalid.
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null;
   }
 
-  // Stop if the accuracy value is worse than the allowed limit.
+  // Stop when the accuracy is worse than the allowed limit.
   if (Number.isFinite(accuracy) && accuracy > MAX_ACCEPTED_ACCURACY_METERS) {
     return null;
   }
@@ -76,7 +76,7 @@ export function shouldKeepPoint(lastPoint, nextPoint) {
     return false;
   }
 
-  // Keep the first valid point.
+  // Always keep the first valid point.
   if (!lastPoint) {
     return true;
   }
@@ -169,31 +169,31 @@ export async function buildPlaceNameFromCoords(
       }),
     ]);
 
-    // Use the coordinate label if reverse geocoding times out or returns nothing.
+    // Fall back to coordinates when geocoding times out or returns nothing.
     if (result === timeoutToken || !Array.isArray(result) || !result.length) {
       return fallbackName;
     }
 
-  const first = result[0];
+    const first = result[0];
 
-  const cityLabel = first.city
-    ? [first.city, first.country].filter(Boolean).join(", ")
-    : null;
+    const cityLabel = first.city
+      ? [first.city, first.country].filter(Boolean).join(", ")
+      : null;
 
-  // Return the most specific readable place first.
-  // Use country only as a late fallback.
-  return (
-    cityLabel ||
-    first.district ||
-    first.subregion ||
-    first.region ||
-    first.name ||
-    first.street ||
-    first.country ||
-    fallbackName
-  );
-    } catch (error) {
-      console.log(errorLabel, error);
-      return fallbackName;
-    }
+    // Return the most useful readable label first,
+    // using coordinates only as the final fallback.
+    return (
+      cityLabel ||
+      first.district ||
+      first.subregion ||
+      first.region ||
+      first.name ||
+      first.street ||
+      first.country ||
+      fallbackName
+    );
+  } catch (error) {
+    console.log(errorLabel, error);
+    return fallbackName;
   }
+}

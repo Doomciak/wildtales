@@ -12,9 +12,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { colors } from "../../../constants/theme";
 import { radius, spacing } from "../../../constants/layout";
 
-// This modal shows images in a full screen gallery view.
-// It gets the current image list, selected index, navigation handlers,
-// and accessibility labels through props.
+// Full-screen gallery used to preview place or journey images.
 export default function ImageGalleryModal({
   visible,
   onClose,
@@ -28,10 +26,10 @@ export default function ImageGalleryModal({
   nextLabel = "Next image",
   selectLabelPrefix = "Select image",
 }) {
-  // Currently selected image based on the active index.
+  // Keep the currently selected image easy to access during rendering.
   const selectedItem = items[index] || null;
 
-  // Used to decide whether gallery navigation should be shown.
+  // Extra controls only make sense when there is more than one image.
   const hasMultipleItems = items.length > 1;
 
   return (
@@ -41,10 +39,10 @@ export default function ImageGalleryModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      {/* Dark overlay behind the gallery so the image stands out more */}
+      {/* Dark overlay helps the image stand out from the rest of the screen. */}
       <View style={styles.overlay}>
         <View style={styles.header}>
-          {/* Small badge showing current image number and image type */}
+          {/* Show the current position in the gallery and the image type. */}
           <View style={styles.counterPill}>
             <Ionicons
               name={
@@ -60,7 +58,6 @@ export default function ImageGalleryModal({
             </Text>
           </View>
 
-          {/* Button for closing the gallery */}
           <Pressable
             style={styles.closeButton}
             onPress={onClose}
@@ -81,7 +78,7 @@ export default function ImageGalleryModal({
             />
           ) : null}
 
-          {/* Show previous and next controls only if there is more than one image */}
+          {/* Keep previous and next buttons available for gallery-style browsing. */}
           {hasMultipleItems ? (
             <>
               <Pressable
@@ -107,12 +104,11 @@ export default function ImageGalleryModal({
           ) : null}
         </View>
 
-        {/* Optional text shown under the active image */}
         {selectedItem?.label ? (
           <Text style={styles.imageLabel}>{selectedItem.label}</Text>
         ) : null}
 
-        {/* Thumbnail list for quickly switching between gallery images */}
+        {/* Thumbnails make it quicker to jump straight to a specific image. */}
         {hasMultipleItems ? (
           <ScrollView
             horizontal

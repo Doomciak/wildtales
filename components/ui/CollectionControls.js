@@ -12,7 +12,7 @@ import { colors, shadows } from "../../constants/theme";
 import { radius, spacing } from "../../constants/layout";
 import FilterChip from "./FilterChip";
 
-// Search and filter controls used above collection-style lists.
+// Search bar with optional filter and sort controls for collection-style screens.
 export default function CollectionControls({
   search = "",
   onChangeSearch,
@@ -40,7 +40,7 @@ export default function CollectionControls({
             onChangeText={onChangeSearch}
           />
 
-          {/* Show a clear button only when there is something typed in the search field */}
+          {/* Only show the clear button when the search field has text. */}
           {search.trim() ? (
             <Pressable
               onPress={() => onChangeSearch?.("")}
@@ -53,7 +53,7 @@ export default function CollectionControls({
           ) : null}
         </View>
 
-        {/* This button opens or closes the extra filter and sorting panel */}
+        {/* Toggle the expanded filter and sort panel. */}
         <Pressable
           style={[
             styles.toggleButton,
@@ -69,7 +69,7 @@ export default function CollectionControls({
             color={showControls ? colors.textDark : colors.textSecondary}
           />
 
-          {/* If any filters or sort options are active, show the count on the button */}
+          {/* Show how many filters or sort options are currently active. */}
           {activeCount > 0 ? (
             <View style={styles.countBadge}>
               <Text style={styles.countText}>{activeCount}</Text>
@@ -83,7 +83,7 @@ export default function CollectionControls({
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Filters & sort</Text>
 
-            {/* Clear button only appears when something is actually active */}
+            {/* Only show clear when there is something to reset. */}
             {hasActiveControls ? (
               <Pressable
                 style={styles.clearButton}
@@ -96,7 +96,7 @@ export default function CollectionControls({
             ) : null}
           </View>
 
-          {/* Each section represents one filter or sort group */}
+          {/* Each section renders one group of filter or sort choices. */}
           {sections.map((section) => (
             <View key={section.key || section.title} style={styles.sectionBlock}>
               <Text style={styles.sectionLabel}>{section.title}</Text>
@@ -107,7 +107,7 @@ export default function CollectionControls({
                 contentContainerStyle={styles.chipsRow}
               >
                 {section.options.map((option) => {
-                  // Support both simple string options and object-based options.
+                  // Support both plain string options and object-based options.
                   const value =
                     typeof option === "object" ? option.value : option;
                   const label =
@@ -126,7 +126,7 @@ export default function CollectionControls({
             </View>
           ))}
 
-          {/* Optional short summary shown under the filter sections */}
+          {/* Optional short summary shown under the controls. */}
           {summary ? <Text style={styles.summaryText}>{summary}</Text> : null}
         </View>
       ) : null}

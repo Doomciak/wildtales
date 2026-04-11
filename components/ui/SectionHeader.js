@@ -2,8 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors } from "../../constants/theme";
 
-// Header used above a section title.
-// It can also show a small action on the right, for example "View all".
+// Section header with an optional action on the right.
 export default function SectionHeader({
   title,
   actionLabel = "View all",
@@ -13,7 +12,7 @@ export default function SectionHeader({
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
-      {/* Only show the action button if a handler was passed in */}
+      {/* Only render the action when a press handler is provided. */}
       {onPress ? (
         <Pressable
           onPress={onPress}

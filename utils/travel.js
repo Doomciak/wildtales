@@ -4,11 +4,12 @@ import { map } from "../constants/layout";
 export const ROUTE_LINE_COLOR = colors.routeLine;
 
 // Safely convert a value to a number.
-// If conversion fails, return null instead of an invalid number.
+// Return null instead of an invalid numeric value.
 function toNumber(value) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
+
 // Check that a point exists and has usable latitude and longitude values.
 function isValidPoint(point) {
   return (
@@ -18,8 +19,8 @@ function isValidPoint(point) {
   );
 }
 
+// Convert any valid point into a clean numeric latitude/longitude object.
 function normalizePoint(point) {
-  // Convert any valid point into a clean numeric latitude/longitude object.
   if (!isValidPoint(point)) {
     return null;
   }
@@ -36,7 +37,7 @@ export function toRadians(value) {
 }
 
 export function getDistanceKm(pointA, pointB) {
-    // First make sure both points are in a clean numeric format.
+  // First make sure both points are in a clean numeric format.
   const start = normalizePoint(pointA);
   const end = normalizePoint(pointB);
 
@@ -45,7 +46,7 @@ export function getDistanceKm(pointA, pointB) {
     return 0;
   }
 
-  // Haversine formula used to calculate distance between two coordinates.
+  // Use the Haversine formula to calculate distance between two coordinates.
   const earthRadiusKm = 6371;
   const dLat = toRadians(end.latitude - start.latitude);
   const dLon = toRadians(end.longitude - start.longitude);
@@ -64,8 +65,7 @@ export function getDistanceKm(pointA, pointB) {
 }
 
 export function getPathDistanceKm(coords = []) {
-  // Total route distance is built by summing the distance
-  // between each pair of neighbouring points.
+  // Build the total route distance by summing each neighbouring point pair.
   if (!Array.isArray(coords) || coords.length < 2) {
     return 0;
   }
@@ -126,15 +126,15 @@ export function getShortPlaceLabel(placeName) {
     return "";
   }
 
-  // For longer location strings like "Glasgow, Scotland",
-  // only use the first part for shorter labels and titles.
+  // For longer labels like "Glasgow, Scotland",
+  // only keep the first part for shorter UI text.
   return cleanText.split(",")[0].trim();
 }
 
 export function buildJourneyTitleFromTrip(tripOrStart, maybeEnd) {
-  // This supports both:
+  // Support both:
   // 1. a trip object with startPlaceName and endPlaceName
-  // 2. two separate start and end values
+  // 2. separate start and end values
   const startPlaceName =
     typeof tripOrStart === "object" && tripOrStart !== null
       ? tripOrStart.startPlaceName

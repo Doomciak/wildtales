@@ -7,8 +7,7 @@ import ModalHeader from "./shared/ModalHeader";
 import ModalTextField from "./shared/ModalTextField";
 import { spacing } from "../../constants/layout";
 
-// Modal used to edit an already saved journey.
-// It now supports both text editing and full photo CRUD in one place.
+// Modal for updating a saved journey, including its text details and photos.
 export default function EditJourneyModal({
   visible,
   savingRouteEdit,
@@ -29,8 +28,7 @@ export default function EditJourneyModal({
       visible={visible}
       transparent
       animationType="fade"
-      // While saving, closing is temporarily blocked
-      // so the modal cannot be dismissed in the middle of the update.
+      // Prevent the modal from being dismissed while changes are saving.
       onRequestClose={savingRouteEdit ? undefined : onClose}
     >
       <ModalCardShell>
@@ -46,7 +44,6 @@ export default function EditJourneyModal({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          {/* Title field for the saved journey. */}
           <ModalTextField
             label="Journey title"
             iconName="type"
@@ -56,7 +53,6 @@ export default function EditJourneyModal({
             editable={!savingRouteEdit}
           />
 
-          {/* Optional note field for extra journey details. */}
           <ModalTextField
             label="Note"
             iconName="edit-3"
@@ -67,8 +63,8 @@ export default function EditJourneyModal({
             multiline
           />
 
-          {/* Shared image manager keeps journey photo actions consistent
-              with the place form, while the hook handles the actual logic. */}
+          {/* Reuse the shared image manager so photo editing stays consistent
+              with the rest of the app while the parent handles the update logic. */}
           <EditableImageManager
             label="Journey photos"
             images={editingRouteImages}
@@ -87,7 +83,6 @@ export default function EditJourneyModal({
           />
         </ScrollView>
 
-        {/* Bottom action buttons for cancelling or saving the edit. */}
         <ModalActionRow
           leftAction={{
             label: "Cancel",

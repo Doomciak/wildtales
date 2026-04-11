@@ -1,6 +1,6 @@
 import { dbPromise, nowIso } from "./core";
 
-// Creates a new entry in the pending sync queue.
+// Create a new entry in the pending sync queue.
 export async function createPendingSyncEntry({
   entityType,
   entityId = null,
@@ -33,7 +33,7 @@ export async function createPendingSyncEntry({
   return result.lastInsertRowId;
 }
 
-// Retrieves pending or failed sync items for processing.
+// Return pending or failed sync items ready for processing.
 export async function getPendingSyncItems(limit = 50) {
   const db = await dbPromise;
 
@@ -57,7 +57,7 @@ export async function getPendingSyncItems(limit = 50) {
   );
 }
 
-// Marks a sync queue item as currently being processed.
+// Mark a sync queue item as currently being processed.
 export async function markPendingSyncProcessing(id) {
   const db = await dbPromise;
 
@@ -71,7 +71,7 @@ export async function markPendingSyncProcessing(id) {
   );
 }
 
-// Marks a sync queue item as completed.
+// Mark a sync queue item as completed.
 export async function markPendingSyncDone(id) {
   const db = await dbPromise;
 
@@ -85,7 +85,7 @@ export async function markPendingSyncDone(id) {
   );
 }
 
-// Marks a sync queue item as failed and stores the error message.
+// Mark a sync queue item as failed and store the latest error message.
 export async function markPendingSyncFailed(id, errorMessage = "Unknown error") {
   const db = await dbPromise;
 
@@ -102,13 +102,13 @@ export async function markPendingSyncFailed(id, errorMessage = "Unknown error") 
   );
 }
 
-// Removes sync queue items that have already been completed.
+// Remove sync queue items that have already been completed.
 export async function deleteCompletedSyncItems() {
   const db = await dbPromise;
   await db.runAsync("DELETE FROM pending_sync WHERE status = 'done'");
 }
 
-// Marks a place record as successfully synced.
+// Mark a place record as successfully synced.
 export async function markPlaceSynced(localId, remoteId = null) {
   const db = await dbPromise;
 
@@ -124,7 +124,7 @@ export async function markPlaceSynced(localId, remoteId = null) {
   );
 }
 
-// Marks a route record as successfully synced.
+// Mark a route record as successfully synced.
 export async function markRouteSynced(localId, remoteId = null) {
   const db = await dbPromise;
 
@@ -140,7 +140,7 @@ export async function markRouteSynced(localId, remoteId = null) {
   );
 }
 
-// Marks a trip session record as successfully synced.
+// Mark a trip session record as successfully synced.
 export async function markTripSessionSynced(localId, remoteId = null) {
   const db = await dbPromise;
 

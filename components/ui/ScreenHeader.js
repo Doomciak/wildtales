@@ -16,7 +16,7 @@ export default function ScreenHeader({
     <View style={[styles.container, style]}>
       <Text style={[styles.title, titleStyle]}>{title}</Text>
 
-      {/* Subtitle is optional, so only render it when it exists */}
+      {/* Only render the subtitle when one is provided. */}
       {subtitle ? (
         <Text style={[styles.subtitle, { maxWidth }, subtitleStyle]}>
           {subtitle}

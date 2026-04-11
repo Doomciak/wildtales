@@ -5,14 +5,14 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// This file is used to store received location logs locally on the server.
+// Store received location logs locally in this JSON file.
 const dataFilePath = path.join(__dirname, "location-logs.json");
 
 app.use(express.json());
 
 function readLogs() {
   try {
-    // If the file does not exist yet, just return an empty list.
+    // Return an empty list if the file does not exist yet.
     if (!fs.existsSync(dataFilePath)) {
       return [];
     }
@@ -27,7 +27,7 @@ function readLogs() {
 
 function writeLogs(logs) {
   try {
-    // Save the full logs array back into the JSON file.
+    // Save the full logs array back to the JSON file.
     fs.writeFileSync(dataFilePath, JSON.stringify(logs, null, 2), "utf8");
   } catch (error) {
     console.log("Write logs error:", error);
@@ -35,7 +35,7 @@ function writeLogs(logs) {
 }
 
 app.get("/api/ping", (req, res) => {
-  // Simple test route to check that the server is running.
+  // Simple route to check that the server is running.
   res.json({ ok: true, message: "WildTales server is running" });
 });
 
@@ -48,7 +48,7 @@ app.get("/api/location-logs", (req, res) => {
 app.post("/api/location-logs", (req, res) => {
   const { tripId, latitude, longitude, placeName, recordedAt } = req.body;
 
-  // Basic validation to make sure required tracking data is present.
+  // Basic validation to make sure the required tracking fields exist.
   if (
     tripId == null ||
     latitude == null ||
@@ -63,7 +63,7 @@ app.post("/api/location-logs", (req, res) => {
 
   const logs = readLogs();
 
-  // Create one new log object from the request data.
+  // Build one new log object from the request data.
   const newLog = {
     id: Date.now(),
     tripId,
@@ -85,6 +85,6 @@ app.post("/api/location-logs", (req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  // Start the server and allow connections from outside localhost as well.
+  // Start the server and allow connections outside localhost.
   console.log(`WildTales server running on port ${PORT}`);
 });

@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { colors } from "../../../constants/theme";
 import { spacing } from "../../../constants/layout";
 
-// Modal header with title, optional subtitle, and close button.
+// Reusable modal header with a title, optional subtitle, and close button.
 export default function ModalHeader({
   title,
   subtitle,
@@ -26,13 +26,12 @@ export default function ModalHeader({
       <View style={styles.headerTextWrap}>
         <Text style={[styles.title, titleStyle]}>{title}</Text>
 
-        {/* Subtitle is only shown when it is passed in */}
+        {/* Only show the subtitle when one is provided. */}
         {subtitle ? (
           <Text style={[styles.subtitle, subtitleStyle]}>{subtitle}</Text>
         ) : null}
       </View>
-      
-    {/* Close button for the modal */}
+
       <Pressable
         style={styles.closeButton}
         onPress={onClose}
@@ -59,7 +58,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg - 2,
   },
   headerTextWrap: {
-
     flex: 1,
     paddingRight: spacing.md,
   },

@@ -15,28 +15,28 @@ import { colors, shadows } from "../../constants/theme";
 // Welcome screen shown before entering the main app.
 // The user swipes the button upward to continue.
 export default function WelcomeScreen({ onContinue }) {
-  // Controls the vertical movement of the swipe button.
+  // Track the vertical position of the swipe button.
   const translateY = useRef(new Animated.Value(0)).current;
 
-  // Used to avoid resetting the animation after the screen has already completed.
+  // Prevent reset logic from running after the swipe has already completed.
   const completedRef = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
-      // Start handling the gesture only when the vertical movement is noticeable.
+      // Start handling the gesture once the vertical movement is noticeable.
       onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 6,
 
       onPanResponderMove: (_, gesture) => {
         // Only allow upward dragging.
         if (gesture.dy < 0) {
-          // Limit how far the button can be dragged upward.
+          // Limit how far the button can move upward.
           const limitedValue = Math.max(gesture.dy, -150);
           translateY.setValue(limitedValue);
         }
       },
 
       onPanResponderRelease: (_, gesture) => {
-        // If the user swipes far enough, finish the animation and enter the app.
+        // Complete the transition when the swipe passes the trigger distance.
         if (gesture.dy <= -110) {
           completedRef.current = true;
 
@@ -51,7 +51,7 @@ export default function WelcomeScreen({ onContinue }) {
           return;
         }
 
-        // If the swipe was too short, move the button back to the start position.
+        // Snap the button back if the swipe was too short.
         Animated.spring(translateY, {
           toValue: 0,
           useNativeDriver: true,
@@ -60,7 +60,7 @@ export default function WelcomeScreen({ onContinue }) {
       },
 
       onPanResponderTerminate: () => {
-        // Reset the button if the gesture gets interrupted before completion.
+        // Reset the button if the gesture is interrupted before completion.
         if (!completedRef.current) {
           Animated.spring(translateY, {
             toValue: 0,
@@ -98,10 +98,9 @@ export default function WelcomeScreen({ onContinue }) {
                   transform: [{ translateY }],
                 },
               ]}
-              // Attach swipe gesture handlers to the draggable button
               {...panResponder.panHandlers}
             >
-              {/* Arrow hint above the button to show the swipe direction */}
+              {/* Simple visual hint showing the swipe direction. */}
               <View style={styles.sliderArrows}>
                 <Ionicons
                   name="chevron-up"
@@ -116,7 +115,6 @@ export default function WelcomeScreen({ onContinue }) {
                 />
               </View>
 
-              {/* Main swipe control the user drags upward to continue */}
               <View style={styles.sliderButton}>
                 <Text style={styles.sliderButtonText}>GO</Text>
               </View>
