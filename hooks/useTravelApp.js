@@ -24,7 +24,6 @@ export default function useTravelApp() {
 
   // Journey editing flow: title, note, photos, and delete.
   const journeyEditing = useJourneyEditing({
-    routes: travelData.routes,
     loadRoutes: travelData.loadRoutes,
   });
 

@@ -24,7 +24,6 @@ import {
 } from "../../utils/travel";
 
 // Make sure journey images always end up as a clean array.
-// Some routes already store them as an array, while older ones may still use JSON.
 function getJourneyImages(route) {
   if (Array.isArray(route?.images)) {
     return route.images.filter(Boolean);

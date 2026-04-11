@@ -11,7 +11,7 @@ import {
 } from "./helpers";
 
 // Manage editing, saving, and photo updates for saved journeys.
-export default function useJourneyEditing({ routes, loadRoutes }) {
+export default function useJourneyEditing({ loadRoutes }) {
   const [editingRoute, setEditingRoute] = useState(null);
   const [editingRouteTitle, setEditingRouteTitle] = useState("");
   const [editingRouteNote, setEditingRouteNote] = useState("");

@@ -55,7 +55,7 @@ async function apiRequest(path, options = {}) {
 
     const body = await readResponseBody(response);
 
-    // Turn non-2xx responses into normal JS errors
+    // Turn non-2xx responses (unsuccessful) into normal JS errors
     // so the calling code can handle them in one place.
     if (!response.ok) {
       const message =
