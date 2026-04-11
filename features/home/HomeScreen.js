@@ -95,7 +95,7 @@ export default function HomeScreen({
 
           <View style={[styles.overviewStatCard, styles.overviewStatCardLast]}>
             <Text style={styles.overviewStatNumber}>{totalRoutes}</Text>
-            <Text style={styles.overviewStatLabel}>Saved routes</Text>
+            <Text style={styles.overviewStatLabel}>Saved journeys</Text>
           </View>
         </View>
 

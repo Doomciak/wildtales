@@ -24,6 +24,7 @@ import {
 } from "./trackingHelpers";
 import {
   AUTO_CHECK_INTERVAL_MS,
+  AUTO_RETRY_INTERVAL_MS,
   TEST_FALLBACK_DELAY_MS,
 } from "./safetyConfig";
 import { isDeviceOffline, shouldOpenAutoText } from "./safetyHelpers";
@@ -97,21 +98,81 @@ export default function useSafetyFallback({
     stopFallbackTestOnly();
   }
 
+  // Only count another retry when enough time has passed since the last one.
+  function shouldRetryLogNow(log) {
+    if (!log) {
+      return false;
+    }
+
+    if (!log.lastAttemptAt) {
+      const recordedAtMs = new Date(log.recordedAt).getTime();
+
+      if (!Number.isFinite(recordedAtMs)) {
+        return true;
+      }
+
+      return Date.now() - recordedAtMs >= AUTO_RETRY_INTERVAL_MS;
+    }
+
+    const lastAttemptMs = new Date(log.lastAttemptAt).getTime();
+
+    if (!Number.isFinite(lastAttemptMs)) {
+      return true;
+    }
+
+    return Date.now() - lastAttemptMs >= AUTO_RETRY_INTERVAL_MS;
+  }
+
+  // Mark pending logs as failed when the phone has no usable data connection.
+  async function markPendingLogsBlockedByOffline(logs) {
+    const pendingLogs = Array.isArray(logs) ? logs : [];
+    let markedCount = 0;
+
+    for (const log of pendingLogs) {
+      if (!log?.id || log.sentVia === "sms") {
+        continue;
+      }
+
+      if (!shouldRetryLogNow(log)) {
+        continue;
+      }
+
+      await incrementLocationLogAttempt(log.id);
+      markedCount += 1;
+    }
+
+    if (markedCount > 0) {
+      await refreshLogs();
+    }
+
+    return markedCount;
+  }
+
   // Upload one log to the API and update its send status.
   async function uploadSingleLog(log) {
     const offline = await isDeviceOffline();
 
     if (offline) {
+      if (log?.id) {
+        await incrementLocationLogAttempt(log.id);
+        await refreshLogs();
+      }
+
+      setUpdatesMessage(
+        "No data connection. This location was saved on this device and will keep retrying automatically."
+      );
       return false;
     }
 
     try {
       await sendLocationLogToApi(log);
       await markLocationLogSent(log.id, "api");
+      await refreshLogs();
       return true;
     } catch (error) {
       console.log("Send log error:", error);
       await incrementLocationLogAttempt(log.id);
+      await refreshLogs();
       return false;
     }
   }
@@ -122,20 +183,32 @@ export default function useSafetyFallback({
       return null;
     }
 
-    const offline = await isDeviceOffline();
-
-    if (offline) {
-      return {
-        total: 0,
-        sent: 0,
-        failed: 0,
-        skipped: true,
-      };
-    }
-
     syncBusyRef.current = true;
 
     try {
+      const pendingLogs = await getPendingLocationLogs();
+
+      if (!pendingLogs.length) {
+        return {
+          total: 0,
+          sent: 0,
+          failed: 0,
+        };
+      }
+
+      const offline = await isDeviceOffline();
+
+      if (offline) {
+        const failed = await markPendingLogsBlockedByOffline(pendingLogs);
+
+        return {
+          total: pendingLogs.length,
+          sent: 0,
+          failed,
+          blockedByOffline: true,
+        };
+      }
+
       const result = await syncPendingLocationLogs();
       await refreshLogs();
       return result;
@@ -259,16 +332,6 @@ export default function useSafetyFallback({
 
     try {
       setRetryingUploads(true);
-
-      const offline = await isDeviceOffline();
-
-      if (offline) {
-        setUpdatesMessage(
-          "Online updates are unavailable right now, but route tracking is still saving on this device."
-        );
-        return;
-      }
-
       setUpdatesMessage("Retrying pending online updates...");
 
       const pendingBefore = await getPendingLocationLogs();
@@ -285,6 +348,13 @@ export default function useSafetyFallback({
 
       if (!pendingAfter.length) {
         setUpdatesMessage("Retry complete. All pending updates were sent.");
+        return;
+      }
+
+      if (result?.blockedByOffline) {
+        setUpdatesMessage(
+          "No data connection. Pending updates stayed on this device and the text fallback will open automatically if online sending keeps failing."
+        );
         return;
       }
 

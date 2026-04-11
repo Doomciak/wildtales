@@ -105,7 +105,7 @@ export default function useSafetyTracking({
       }
 
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.Highest,
         timeInterval: BACKGROUND_TRACK_TIME_INTERVAL_MS,
         distanceInterval: BACKGROUND_TRACK_DISTANCE_INTERVAL_METERS,
         pausesUpdatesAutomatically: false,

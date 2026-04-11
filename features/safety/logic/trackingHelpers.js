@@ -174,20 +174,26 @@ export async function buildPlaceNameFromCoords(
       return fallbackName;
     }
 
-    const first = result[0];
+  const first = result[0];
 
-    // Return the best available place name from the geocoding result.
-    return (
-      [first.city, first.country].filter(Boolean).join(", ") ||
-      first.district ||
-      first.subregion ||
-      first.region ||
-      first.name ||
-      first.street ||
-      fallbackName
-    );
-  } catch (error) {
-    console.log(errorLabel, error);
-    return fallbackName;
+  const cityLabel = first.city
+    ? [first.city, first.country].filter(Boolean).join(", ")
+    : null;
+
+  // Return the most specific readable place first.
+  // Use country only as a late fallback.
+  return (
+    cityLabel ||
+    first.district ||
+    first.subregion ||
+    first.region ||
+    first.name ||
+    first.street ||
+    first.country ||
+    fallbackName
+  );
+    } catch (error) {
+      console.log(errorLabel, error);
+      return fallbackName;
+    }
   }
-}
