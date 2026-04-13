@@ -57,7 +57,7 @@ y
 
 ### Option 2: Install the APK on Android
 
-1. Download the provided [WildTales APK](https://expo.dev/accounts/doomciak/projects/WildTales/builds/f9dd275a-d6ba-492f-a6b1-6eaa242d27f8).
+1. Download the provided [WildTales APK](https://expo.dev/accounts/doomciak/projects/WildTales/builds/815e97aa-4518-4fce-b37e-f9e61c27d1ed).
 2. Open the APK file on the Android device.
 3. Allow installation from unknown sources if Android requests permission.
 4. Install the app and open WildTales.
