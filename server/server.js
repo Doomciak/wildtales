@@ -48,7 +48,7 @@ app.get("/api/location-logs", (req, res) => {
 app.post("/api/location-logs", (req, res) => {
   const { tripId, latitude, longitude, placeName, recordedAt } = req.body;
 
-  // Basic validation to make sure the required tracking fields exist.
+  // Basic validation to make sure the required tracking data is present.
   if (
     tripId == null ||
     latitude == null ||
@@ -63,7 +63,7 @@ app.post("/api/location-logs", (req, res) => {
 
   const logs = readLogs();
 
-  // Build one new log object from the request data.
+  // Create one new log object from the request data.
   const newLog = {
     id: Date.now(),
     tripId,

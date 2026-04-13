@@ -170,7 +170,7 @@ export default function usePlaceForm({
     });
   }
 
-  // Pick one or more images from the library.
+  // Pick one or more images from the photo library.
   async function pickFromLibrary() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();

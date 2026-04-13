@@ -40,7 +40,7 @@ export default function CollectionControls({
             onChangeText={onChangeSearch}
           />
 
-          {/* Only show the clear button when the search field has text. */}
+          {/* Show a clear button only when there is something typed in the search field */}
           {search.trim() ? (
             <Pressable
               onPress={() => onChangeSearch?.("")}

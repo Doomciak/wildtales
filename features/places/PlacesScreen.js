@@ -346,7 +346,7 @@ export default function PlacesScreen({
 
             return (
               <View key={place.id} style={styles.placeListCard}>
-                {/* Open the full place preview when the main card area is pressed. */}
+                {/* Main card press opens the full place preview */}
                 <Pressable
                   style={styles.placeListMain}
                   onPress={() => setPreviewPlace(place)}
@@ -357,7 +357,7 @@ export default function PlacesScreen({
                       style={styles.placeListImage}
                     />
                   ) : (
-                    // Fall back to the first letter of the place title when no image exists.
+                    // If no image exist, use the first letter of the place title as a fallback.
                     <View style={[styles.placeListImage, styles.placeListFallback]}>
                       <Text style={styles.placeListLetter}>
                         {String(place.title).charAt(0).toUpperCase()}
